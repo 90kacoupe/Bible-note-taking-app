@@ -1,7 +1,8 @@
 // Offline cache for the app shell. Bump VERSION whenever you change a file
 // so phones pick up the update.
-const VERSION = 'bible-notes-v1';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
+const VERSION = 'bible-notes-v2';
+const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
+  './bible/bsb.js', './bible/kjv.js'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));

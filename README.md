@@ -7,6 +7,14 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
 
 - **Sermon notes**: title, speaker, date, scripture passages, church/event, series and tags.
 - **Bible study notes**: blank or a **SOAP** template (Scripture · Observation · Application · Prayer).
+- **Built-in Bible text (works offline).** Type a reference like `John 3:16`, `rom 8:28` or `1 Cor 13:4-7`
+  and press **Enter**. The verse text is added to your note automatically:
+  - A line that is *only* a reference is replaced by the verse: `📖 John 3:16 “For God so loved…” (BSB)`
+  - A reference inside a sentence (`Paul says in Rom 8:28 all things…`) gets the verse added on the line below,
+    and you keep typing where you were.
+  - Tap **Undo** on the pop-up to remove it, or put the cursor on a line and tap **📖 Verse** to add it by hand.
+  - Choose **BSB** (Berean Standard Bible, modern English) or **KJV** in Settings, or turn auto-insert off.
+    Both are public domain, which is why they can be bundled. ESV and NIV are copyrighted and can't be included.
 - **Quick-mark buttons** for headings, bullet points, ⭐ key points, 📖 verses, ❓ questions, ➡️ applications and 🙏 prayers.
   Bullet lists continue automatically when you press Enter.
 - **Preview mode** shows color-coded notes. Verse references such as `John 3:16` or `1 Cor 13:4-7` become links
@@ -59,6 +67,7 @@ Use **Settings → Export backup** regularly, and keep the file somewhere safe (
 | `➡️ text`            | Application                     |
 | `🙏 text`            | Prayer                          |
 | `**bold**` / `*italic*` | **bold** / *italic*          |
+| `John 3:16` + Enter  | Verse text inserted automatically |
 
 ## Project layout
 
@@ -67,6 +76,8 @@ index.html             The whole app (markup, styles and script)
 manifest.webmanifest   App name, colors and icons for "Add to Home Screen"
 sw.js                  Service worker that caches the app for offline use
 icons/                 App icons
+bible/bsb.js, kjv.js   Bible text (loaded only when needed, cached for offline use)
+tools/build_bible.py   Script that generated bible/*.js from public-domain source data
 ```
 
 When you change `index.html`, bump `VERSION` in `sw.js` so installed copies pick up the update.
@@ -85,5 +96,5 @@ npx cap add android   # opens in Android Studio
 npx cap add ios       # needs a Mac with Xcode
 ```
 
-Possible next steps at that point include cloud sync between devices, built-in Bible text
-(e.g. from a public-domain translation or an API), and reminders for reading plans.
+Possible next steps at that point include cloud sync between devices, licensed translations
+such as ESV/NIV through their official APIs, and reminders for reading plans.

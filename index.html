@@ -224,10 +224,12 @@
   code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
 
   .toast {
-    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    position: fixed; left: 50%; top: calc(68px + env(safe-area-inset-top)); transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px;
     background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: .9rem;
     z-index: 50; box-shadow: var(--shadow); max-width: calc(100vw - 32px);
   }
+  .toast button { border: 0; background: transparent; color: inherit; font-weight: 700; text-decoration: underline; padding: 4px; flex: none; }
 </style>
 </head>
 <body>
@@ -322,7 +324,20 @@
   </div>
   <div class="dlg-body">
     <div class="setting">
-      <span>Bible translation<small>Used when you tap a verse reference</small></span>
+      <span>Verse text<small>Built in, works offline</small></span>
+      <select id="sVerseText">
+        <option value="BSB">BSB – Berean Standard</option>
+        <option value="KJV">KJV – King James</option>
+      </select>
+    </div>
+    <div class="setting">
+      <span>Auto-insert verses<small>Type a reference like John 3:16, then press Enter</small></span>
+      <select id="sAutoVerse">
+        <option value="on">On</option><option value="off">Off</option>
+      </select>
+    </div>
+    <div class="setting">
+      <span>Open verse links in<small>Online, when you tap a reference in Preview</small></span>
       <select id="sTranslation">
         <option>ESV</option><option>NIV</option><option>KJV</option><option>NKJV</option>
         <option>NLT</option><option>CSB</option><option>NASB</option><option>AMP</option><option>MSG</option>
@@ -354,13 +369,14 @@
     <ul class="help-list">
       <li><code># </code> Heading &nbsp; <code>- </code> Bullet point &nbsp; <code>&gt; </code> Quote</li>
       <li><code>**bold**</code> &nbsp; <code>*italic*</code></li>
+      <li>Type a reference like <code>John 3:16</code> or <code>Rom 8:28-30</code> and press <strong>Enter</strong>. The verse text is added for you. Or put the cursor on the line and tap <strong>📖 Verse</strong>.</li>
       <li>Verse references like <span class="ref">John 3:16</span> or <span class="ref">1 Cor 13:4-7</span> become tappable links in Preview.</li>
     </ul>
     <p style="font-size:.8rem;color:var(--muted);margin-bottom:0" id="countLine"></p>
   </div>
 </dialog>
 
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" role="status" hidden><span id="toastMsg"></span><button id="toastAction" hidden></button></div>
 
 <script>
 'use strict';
@@ -385,7 +401,7 @@ function persistNotes() {
   }
 }
 function loadSettings() {
-  const defaults = { translation: 'ESV', theme: 'system', size: 'medium' };
+  const defaults = { translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on' };
   try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY))); }
   catch { return defaults; }
 }
@@ -424,13 +440,22 @@ function formatDate(iso, opts) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, opts || { month: 'short', day: 'numeric', year: 'numeric' });
 }
 let toastTimer;
-function toast(msg) {
+/** Show a short message. Pass { label, run } to add a button such as "Undo". */
+function toast(msg, action) {
   const t = $('#toast');
-  t.textContent = msg;
+  const btn = $('#toastAction');
+  $('#toastMsg').textContent = msg;
+  btn.hidden = !action;
+  btn.onclick = null;
+  if (action) {
+    btn.textContent = action.label;
+    btn.onclick = () => { t.hidden = true; action.run(); };
+  }
   t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  toastTimer = setTimeout(() => { t.hidden = true; }, action ? 5000 : 2600);
 }
+$('#toastAction').addEventListener('mousedown', e => e.preventDefault());
 function download(filename, text, type) {
   const blob = new Blob([text], { type });
   const a = document.createElement('a');
@@ -490,6 +515,183 @@ function linkifyRefs(escaped) {
     const normalized = ref.replace(new RegExp('^' + book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.?\\s?'), canon + ' ');
     return `${pre}<a href="${refUrl(normalized)}" target="_blank" rel="noopener">${ref}</a>`;
   });
+}
+
+/* =========================================================
+   Built-in Bible text (public-domain translations in bible/*.js)
+   ========================================================= */
+const BOOK_INDEX = new Map(BOOKS.map(([canon], i) => [canon, i]));
+const MAX_VERSES = 30;
+const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const bibleLoads = {};
+
+/** Load a translation on demand. Uses a <script> tag so it also works from file://. */
+function loadBible(code) {
+  if (window.BIBLE_DATA && BIBLE_DATA[code]) return Promise.resolve(BIBLE_DATA[code]);
+  if (!bibleLoads[code]) {
+    bibleLoads[code] = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = `bible/${code.toLowerCase()}.js`;
+      s.onload = () => (window.BIBLE_DATA && BIBLE_DATA[code]) ? resolve(BIBLE_DATA[code]) : reject(new Error('empty'));
+      s.onerror = () => { delete bibleLoads[code]; s.remove(); reject(new Error('load failed')); };
+      document.head.appendChild(s);
+    });
+  }
+  return bibleLoads[code];
+}
+
+// Only references with chapter AND verse, e.g. "John 3:16", "rom 8:28-30", "Gen 1:1-2:3".
+// Case-insensitive, since "chapter:verse" rarely shows up in ordinary prose.
+const VERSE_REF_RE = new RegExp(
+  `(^|[^A-Za-z0-9])(${bookAlternation})\\.?\\s?(\\d{1,3}):(\\d{1,3})(?:\\s?[-–]\\s?(\\d{1,3})(?::(\\d{1,3}))?)?(?![A-Za-z0-9:])`,
+  'gi'
+);
+
+function findVerseRefs(line) {
+  const refs = [];
+  for (const m of line.matchAll(VERSE_REF_RE)) {
+    const [, pre, book, ch, v1, a, b] = m;
+    const canon = BOOK_LOOKUP.get(book.replace(/\s+/g, '').toLowerCase());
+    if (!canon) continue;
+    const r = { book: BOOK_INDEX.get(canon), canon, ch: +ch, v1: +v1, ch2: +ch, v2: +v1 };
+    if (b) { r.ch2 = +a; r.v2 = +b; } else if (a) { r.v2 = +a; }
+    if (r.ch2 < r.ch || (r.ch2 === r.ch && r.v2 < r.v1)) { r.ch2 = r.ch; r.v2 = r.v1; }
+    r.text = m[0].slice(pre.length);
+    refs.push(r);
+  }
+  return refs;
+}
+
+function refLabel(r) {
+  // A single psalm is "Psalm 23", not "Psalms 23".
+  let label = `${r.canon === 'Psalms' ? 'Psalm' : r.canon} ${r.ch}:${r.v1}`;
+  if (r.ch2 !== r.ch) label += `-${r.ch2}:${r.v2}`;
+  else if (r.v2 !== r.v1) label += `-${r.v2}`;
+  return label;
+}
+
+const sup = n => String(n).split('').map(d => SUPERSCRIPT[d]).join('');
+
+/** Look up the text for a reference. Returns null if it doesn't exist. */
+function passageText(bible, r) {
+  const chapters = bible[r.book];
+  if (!chapters || !chapters[r.ch - 1]) return null;
+  if (r.v1 < 1 || r.v1 > chapters[r.ch - 1].length) return null;
+  const parts = [];
+  let count = 0, truncated = false;
+  const multi = r.ch2 !== r.ch || r.v2 !== r.v1;
+  for (let c = r.ch; c <= Math.min(r.ch2, chapters.length); c++) {
+    const verses = chapters[c - 1];
+    const from = c === r.ch ? r.v1 : 1;
+    const to = c === r.ch2 ? Math.min(r.v2, verses.length) : verses.length;
+    for (let v = from; v <= to; v++) {
+      if (count >= MAX_VERSES) { truncated = true; break; }
+      count++;
+      const t = verses[v - 1];
+      if (!t) continue; // e.g. verses the BSB omits (Matthew 17:21)
+      const num = multi ? (c !== r.ch && v === 1 ? sup(c) + 'ː' + sup(v) : sup(v)) + ' ' : '';
+      parts.push(num + t);
+    }
+    if (truncated) break;
+  }
+  return { text: parts.join(' '), truncated };
+}
+
+function verseLine(r, passage, code) {
+  if (!passage.text) return `📖 ${refLabel(r)} (not included in the ${code})`;
+  return `📖 ${refLabel(r)} “${passage.text}${passage.truncated ? ' …' : ''}” (${code})`;
+}
+
+/** A line that already holds inserted verse text, e.g. `📖 John 3:16 “For God…” (BSB)`. */
+const isVerseLine = line => /^\s*📖[^“]*“/.test(line) || /^\s*📖.*\(not included in the /.test(line);
+
+/**
+ * Work out what to add for the references on one line.
+ * Returns null if nothing to do, or { replace, insertBelow, labels, missing }.
+ *   replace: new text for the whole line (the line was just a reference)
+ *   insertBelow: verse lines to add after the line (references inside a sentence)
+ */
+function planVerses(line, fullText, bible, code) {
+  if (isVerseLine(line)) return null;
+  const refs = findVerseRefs(line);
+  if (!refs.length) return null;
+
+  // "📖 John 10:11 I am the good shepherd." means the text was typed by hand.
+  const bare = line.replace(/^\s*📖️?\s*/, '').replace(/[\s.,;:!?]+$/, '');
+  const refOnly = refs.length === 1 && bare.toLowerCase() === refs[0].text.toLowerCase();
+  if (!refOnly && /^\s*📖/.test(line)) return null;
+
+  const plan = { replace: null, insertBelow: [], labels: [], missing: [], truncated: false };
+  for (const r of refs) {
+    const p = passageText(bible, r);
+    if (!p) { plan.missing.push(refLabel(r)); continue; }
+    const vl = verseLine(r, p, code);
+    plan.truncated = plan.truncated || p.truncated;
+    if (refOnly) { plan.replace = vl; }
+    else {
+      // Don't insert the same passage twice in one note.
+      if (fullText.includes(vl) || plan.insertBelow.includes(vl)) continue;
+      plan.insertBelow.push(vl);
+    }
+    plan.labels.push(refLabel(r));
+  }
+  return plan;
+}
+
+/**
+ * Add verse text for the line at [lineStart, lineStart + line.length).
+ * Keeps the cursor where the user is typing and offers Undo.
+ */
+async function insertVersesForLine(lineStart, line, { manual = false } = {}) {
+  const ta = F.body;
+  const code = settings.verseText;
+  const noteId = current && current.id;
+  let bible = window.BIBLE_DATA && BIBLE_DATA[code];
+  if (!bible) {
+    try { bible = await loadBible(code); }
+    catch { if (manual) toast('⚠️ Couldn’t load Bible text'); return false; }
+    // The user may have kept typing while it loaded; make sure the line is still there.
+    if (!current || current.id !== noteId || ta.value.slice(lineStart, lineStart + line.length) !== line) return false;
+  }
+  const plan = planVerses(line, ta.value, bible, code);
+  if (!plan) return false;
+  if (plan.missing.length && !plan.labels.length) {
+    toast(`Couldn’t find ${plan.missing.join(', ')}`);
+    return false;
+  }
+  if (!plan.replace && !plan.insertBelow.length) return false;
+
+  const lineEnd = lineStart + line.length;
+  let inserted, original;
+  if (plan.replace) {
+    ta.setRangeText(plan.replace, lineStart, lineEnd, manual ? 'end' : 'preserve');
+    inserted = plan.replace; original = line;
+  } else {
+    const block = '\n' + plan.insertBelow.join('\n');
+    ta.setRangeText(block, lineEnd, lineEnd, 'preserve');
+    inserted = line + block; original = line;
+    if (manual) ta.setSelectionRange(lineEnd + block.length, lineEnd + block.length);
+  }
+  scheduleSave();
+
+  let msg = `Added ${plan.labels.join(', ')}`;
+  if (plan.truncated) msg += ` (first ${MAX_VERSES} verses)`;
+  if (plan.missing.length) msg += ` · couldn’t find ${plan.missing.join(', ')}`;
+  toast(msg, {
+    label: 'Undo',
+    run: () => {
+      const at = ta.value.indexOf(inserted, Math.max(0, lineStart - 200));
+      if (at === -1 || !current || current.id !== noteId) return;
+      const caret = ta.selectionStart;
+      ta.setRangeText(original, at, at + inserted.length, 'preserve');
+      if (caret > at + inserted.length) {
+        const pos = caret - (inserted.length - original.length);
+        ta.setSelectionRange(pos, pos);
+      }
+      scheduleSave();
+    },
+  });
+  return true;
 }
 
 /* =========================================================
@@ -733,6 +935,7 @@ function openEditor(id, isNew) {
   $('#editorView').hidden = false;
   window.scrollTo(0, 0);
   if (isNew) setTimeout(() => (n.type === 'sermon' ? F.title : F.passages).focus(), 50);
+  loadBible(settings.verseText).catch(() => {});
 }
 
 function setType(type, save = true) {
@@ -848,10 +1051,23 @@ function insertMarker(marker) {
 $$('#toolbar [data-insert]').forEach(b => {
   // Keep the keyboard open: don't let the button steal focus from the textarea.
   b.addEventListener('mousedown', e => e.preventDefault());
-  b.addEventListener('click', () => insertMarker(b.dataset.insert));
+  b.addEventListener('click', async () => {
+    if (b.dataset.insert === '📖 ' && !previewMode) {
+      const ta = F.body;
+      const pos = ta.selectionStart;
+      const lineStart = ta.value.lastIndexOf('\n', pos - 1) + 1;
+      const nl = ta.value.indexOf('\n', pos);
+      const line = ta.value.slice(lineStart, nl === -1 ? ta.value.length : nl);
+      if (findVerseRefs(line).length && !isVerseLine(line)) {
+        ta.focus();
+        if (await insertVersesForLine(lineStart, line, { manual: true })) return;
+      }
+    }
+    insertMarker(b.dataset.insert);
+  });
 });
 
-/* ----- Continue bullet lists when pressing Enter ----- */
+/* ----- On Enter: continue bullet lists and add verse text ----- */
 F.body.addEventListener('input', e => {
   if (e.inputType !== 'insertLineBreak' && e.inputType !== 'insertParagraph') return;
   const ta = F.body;
@@ -860,13 +1076,15 @@ F.body.addEventListener('input', e => {
   const prevStart = ta.value.lastIndexOf('\n', prevEnd - 1) + 1;
   const prev = ta.value.slice(prevStart, prevEnd);
   const m = prev.match(/^(\s*)([-*•])\s+(.*)$/) || prev.match(/^(\s*)([-*•])\s*$/);
-  if (!m) return;
-  if (!m[3] || !m[3].trim()) {
-    // Empty bullet + Enter ends the list.
-    ta.setRangeText('', prevStart, pos, 'end');
-  } else {
+  if (m) {
+    if (!m[3] || !m[3].trim()) {
+      // Empty bullet + Enter ends the list.
+      ta.setRangeText('', prevStart, pos, 'end');
+      return;
+    }
     ta.setRangeText(`${m[1]}${m[2]} `, pos, pos, 'end');
   }
+  if (settings.autoVerse === 'on') insertVersesForLine(prevStart, prev);
 });
 
 /* ----- Edit / Preview ----- */
@@ -910,6 +1128,8 @@ function applySettings() {
 
 $('#settingsBtn').addEventListener('click', () => {
   $('#sTranslation').value = settings.translation;
+  $('#sVerseText').value = settings.verseText;
+  $('#sAutoVerse').value = settings.autoVerse;
   $('#sTheme').value = settings.theme;
   $('#sSize').value = settings.size;
   const s = notes.filter(n => n.type === 'sermon').length;
@@ -919,8 +1139,13 @@ $('#settingsBtn').addEventListener('click', () => {
 $('#closeSettings').addEventListener('click', () => $('#settingsDlg').close());
 $('#settingsDlg').addEventListener('click', e => { if (e.target === $('#settingsDlg')) $('#settingsDlg').close(); });
 
-[['#sTranslation', 'translation'], ['#sTheme', 'theme'], ['#sSize', 'size']].forEach(([sel, key]) =>
-  $(sel).addEventListener('change', e => { settings[key] = e.target.value; persistSettings(); applySettings(); }));
+[['#sTranslation', 'translation'], ['#sTheme', 'theme'], ['#sSize', 'size'], ['#sVerseText', 'verseText'], ['#sAutoVerse', 'autoVerse']]
+  .forEach(([sel, key]) => $(sel).addEventListener('change', e => {
+    settings[key] = e.target.value;
+    persistSettings();
+    applySettings();
+    if (key === 'verseText') loadBible(settings.verseText).catch(() => {});
+  }));
 
 $('#exportJson').addEventListener('click', () => {
   const data = { app: 'bible-notes', version: 1, exportedAt: new Date().toISOString(), notes };
