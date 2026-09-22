@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b4636">
+<meta name="description" content="Take notes on sermons and personal Bible study.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bible Notes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Bible Notes</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface-2: #f1ece4;
+    --text: #2b2420;
+    --muted: #7a6f66;
+    --border: #e3dbd0;
+    --accent: #5b4636;
+    --accent-text: #ffffff;
+    --link: #8a5a2b;
+    --sermon: #2f6f8f;
+    --study: #6b7d3a;
+    --key: #fff3c4;
+    --key-border: #e0b93a;
+    --question: #e6f0fa;
+    --question-border: #5b8fc4;
+    --apply: #e8f4ea;
+    --apply-border: #4f9a5d;
+    --prayer: #f3eaf7;
+    --prayer-border: #9b6bb3;
+    --verse: #f6efe5;
+    --verse-border: #b08a5b;
+    --danger: #b3261e;
+    --badge-text: #ffffff;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
+    --radius: 14px;
+    --font-size: 17px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171412; --surface: #221e1b; --surface-2: #2d2824; --text: #eee6dc; --muted: #a89c90;
+      --border: #3a332d; --accent: #d7b48a; --accent-text: #1b1612; --link: #e3b27a;
+      --sermon: #79b7d6; --study: #b3c77a;
+      --key: #3a3218; --key-border: #b8952b; --question: #1c2a38; --question-border: #5b8fc4;
+      --apply: #1c2e20; --apply-border: #4f9a5d; --prayer: #2e2234; --prayer-border: #9b6bb3;
+      --verse: #2d261e; --verse-border: #9c7a4f; --danger: #f2b8b5; --badge-text: #111111;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #171412; --surface: #221e1b; --surface-2: #2d2824; --text: #eee6dc; --muted: #a89c90;
+    --border: #3a332d; --accent: #d7b48a; --accent-text: #1b1612; --link: #e3b27a;
+    --sermon: #79b7d6; --study: #b3c77a;
+    --key: #3a3218; --key-border: #b8952b; --question: #1c2a38; --question-border: #5b8fc4;
+    --apply: #1c2e20; --apply-border: #4f9a5d; --prayer: #2e2234; --prayer-border: #9b6bb3;
+    --verse: #2d261e; --verse-border: #9c7a4f; --danger: #f2b8b5; --badge-text: #111111;
+    --shadow: 0 1px 3px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+  :root[data-size="small"] { --font-size: 15px; }
+  :root[data-size="large"] { --font-size: 20px; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: var(--font-size)/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 8px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+    background: var(--accent); color: var(--accent-text);
+  }
+  .topbar h1 { font-size: 1.15rem; margin: 0; flex: 1; font-weight: 650; letter-spacing: .2px; }
+  .icon-btn {
+    border: 0; background: transparent; color: inherit;
+    width: 40px; height: 40px; border-radius: 50%;
+    display: inline-grid; place-items: center; font-size: 1.2rem;
+  }
+  .icon-btn:active { background: rgba(255,255,255,.18); }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .save-state { font-size: .8rem; opacity: .85; min-width: 52px; text-align: right; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 12px 16px calc(96px + env(safe-area-inset-bottom)); }
+
+  /* ---------- List view ---------- */
+  .search {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--surface); font-size: 16px;
+  }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 4px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; border: 1px solid var(--border); background: var(--surface);
+    padding: 6px 12px; border-radius: 999px; font-size: .85rem; white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+  .month { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 4px 8px; font-weight: 600; }
+  .card {
+    display: block; width: 100%; text-align: left;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow);
+  }
+  .card:active { transform: scale(.99); }
+  .card-top { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
+  .badge { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; color: var(--badge-text); }
+  .badge.sermon { background: var(--sermon); }
+  .badge.study { background: var(--study); }
+  .card h2 { font-size: 1.05rem; margin: 6px 0 2px; font-weight: 650; }
+  .card .passages { color: var(--link); font-size: .9rem; font-weight: 500; }
+  .card .snippet { color: var(--muted); font-size: .9rem; margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: .75rem; background: var(--surface-2); padding: 1px 8px; border-radius: 999px; color: var(--muted); }
+
+  .empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+  .empty .big { font-size: 3rem; }
+
+  .fab-wrap { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 20; }
+  .fab {
+    border: 0; background: var(--accent); color: var(--accent-text);
+    height: 56px; min-width: 56px; padding: 0 20px; border-radius: 28px; font-weight: 650; font-size: 1rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px;
+  }
+  .fab-menu { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .fab-menu button {
+    border: 1px solid var(--border); background: var(--surface); padding: 10px 16px; border-radius: 12px;
+    box-shadow: var(--shadow); text-align: left; min-width: 220px;
+  }
+  .fab-menu small { display: block; color: var(--muted); font-size: .8rem; }
+
+  /* ---------- Editor ---------- */
+  .type-toggle { display: flex; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .type-toggle button { flex: 1; border: 0; background: transparent; padding: 8px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+  .type-toggle button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+  .title-input {
+    width: 100%; border: 0; background: transparent; font-size: 1.45rem; font-weight: 700;
+    padding: 4px 0; outline: none;
+  }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 12px; }
+  .meta label { min-width: 0; display: flex; flex-direction: column; font-size: .75rem; color: var(--muted); font-weight: 600; gap: 2px; }
+  .meta label.full { grid-column: 1 / -1; }
+  .meta input {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 10px;
+    padding: 9px 10px; font-size: 16px; font-weight: 400; color: var(--text); min-width: 0; width: 100%;
+  }
+  details.more { margin: -4px 0 10px; }
+  details.more summary { color: var(--muted); font-size: .85rem; cursor: pointer; padding: 4px 0; }
+
+  .toolbar {
+    position: sticky; top: calc(60px + env(safe-area-inset-top)); z-index: 5;
+    display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; background: var(--bg); scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar button {
+    flex: none; border: 1px solid var(--border); background: var(--surface); border-radius: 10px;
+    padding: 6px 10px; font-size: .85rem; white-space: nowrap;
+  }
+  .toolbar button.mode { font-weight: 600; background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .toolbar .sep { flex: none; width: 1px; background: var(--border); margin: 4px 2px; }
+
+  .body-input {
+    width: 100%; min-height: 55vh; resize: vertical; border: 1px solid var(--border);
+    background: var(--surface); border-radius: var(--radius); padding: 14px; font-size: max(16px, var(--font-size));
+    line-height: 1.6; outline: none;
+  }
+  .body-input:focus, .meta input:focus, .search:focus { border-color: var(--accent); outline: none; }
+
+  .preview { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; min-height: 40vh; overflow-wrap: anywhere; }
+  .preview h3 { margin: 14px 0 6px; font-size: 1.1rem; }
+  .preview h3:first-child { margin-top: 0; }
+  .preview p { margin: 4px 0; }
+  .preview ul { margin: 4px 0; padding-left: 22px; }
+  .preview .gap { height: 8px; }
+  .preview a, .ref { color: var(--link); font-weight: 600; text-decoration: none; border-bottom: 1px dotted currentColor; }
+  .preview blockquote { margin: 6px 0; padding: 6px 12px; border-left: 3px solid var(--verse-border); background: var(--verse); border-radius: 0 8px 8px 0; font-style: italic; }
+  .callout { padding: 6px 10px; border-radius: 8px; border-left: 3px solid; margin: 6px 0 !important; }
+  .callout .mark { margin-right: 6px; }
+  .callout.key { background: var(--key); border-color: var(--key-border); font-weight: 600; }
+  .callout.question { background: var(--question); border-color: var(--question-border); }
+  .callout.apply { background: var(--apply); border-color: var(--apply-border); }
+  .callout.prayer { background: var(--prayer); border-color: var(--prayer-border); }
+  .callout.verse { background: var(--verse); border-color: var(--verse-border); }
+
+  .editor-footer { display: flex; gap: 8px; justify-content: space-between; margin-top: 16px; font-size: .8rem; color: var(--muted); align-items: center; }
+  .text-btn { border: 0; background: transparent; padding: 8px 4px; font-weight: 600; }
+  .text-btn.danger { color: var(--danger); }
+
+  /* ---------- Dialog ---------- */
+  dialog {
+    border: 0; border-radius: 18px; padding: 0; width: min(520px, calc(100vw - 32px));
+    background: var(--surface); color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  .dlg-head { display: flex; align-items: center; padding: 14px 16px 4px; }
+  .dlg-head h2 { flex: 1; margin: 0; font-size: 1.15rem; }
+  .dlg-body { padding: 4px 16px 18px; }
+  .setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .setting:last-child { border-bottom: 0; }
+  .setting span small { display: block; color: var(--muted); font-size: .8rem; }
+  .setting select { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; font-size: 16px; }
+  .btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .section-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 16px 0 0; }
+  .help-list { padding-left: 0; list-style: none; margin: 8px 0; }
+  .help-list li { padding: 5px 0; }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: .9rem;
+    z-index: 50; box-shadow: var(--shadow); max-width: calc(100vw - 32px);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LIST VIEW ============ -->
+<section id="listView">
+  <header class="topbar">
+    <h1>📖 Bible Notes</h1>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+  <main>
+    <input id="search" class="search" type="search" placeholder="Search notes, verses, speakers, tags…" autocomplete="off">
+    <div class="chips" id="chips"></div>
+    <div id="noteList"></div>
+  </main>
+  <div class="fab-wrap">
+    <div class="fab-menu" id="fabMenu" hidden>
+      <button data-new="sermon">⛪ Sermon notes<small>Speaker, passage, main points</small></button>
+      <button data-new="soap">📝 SOAP study<small>Scripture · Observation · Application · Prayer</small></button>
+      <button data-new="study">📖 Blank study<small>Free-form Bible study</small></button>
+    </div>
+    <button class="fab" id="fab" aria-expanded="false"><span style="font-size:1.4rem;line-height:1">+</span> New note</button>
+  </div>
+</section>
+
+<!-- ============ EDITOR VIEW ============ -->
+<section id="editorView" hidden>
+  <header class="topbar">
+    <button class="icon-btn" id="backBtn" aria-label="Back to notes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h1 id="editorHeading">Note</h1>
+    <span class="save-state" id="saveState"></span>
+    <button class="icon-btn" id="shareBtn" aria-label="Share note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>
+    </button>
+  </header>
+  <main>
+    <div class="type-toggle" role="group" aria-label="Note type">
+      <button data-type="sermon" aria-pressed="false">⛪ Sermon</button>
+      <button data-type="study" aria-pressed="false">📖 Study</button>
+    </div>
+
+    <input id="fTitle" class="title-input" placeholder="Title" autocomplete="off" enterkeyhint="next">
+
+    <div class="meta">
+      <label class="full">Scripture passage(s)
+        <input id="fPassages" placeholder="e.g. John 3:16-21; Romans 8:28" autocomplete="off">
+      </label>
+      <label>Date <input id="fDate" type="date"></label>
+      <label class="sermon-only">Speaker <input id="fSpeaker" placeholder="Pastor…" autocomplete="off"></label>
+      <label class="study-only">Tags <input id="fTagsStudy" placeholder="faith, prayer" autocomplete="off"></label>
+    </div>
+    <details class="more sermon-only" id="moreDetails">
+      <summary>More details (church, series, tags)</summary>
+      <div class="meta">
+        <label>Church / event <input id="fLocation" autocomplete="off"></label>
+        <label>Series <input id="fSeries" autocomplete="off"></label>
+        <label class="full">Tags <input id="fTags" placeholder="faith, prayer, hope" autocomplete="off"></label>
+      </div>
+    </details>
+
+    <div class="toolbar" id="toolbar">
+      <button class="mode" id="modeBtn">👁 Preview</button>
+      <span class="sep"></span>
+      <button data-insert="# ">H Heading</button>
+      <button data-insert="- ">• Point</button>
+      <button data-insert="⭐ ">⭐ Key</button>
+      <button data-insert="📖 ">📖 Verse</button>
+      <button data-insert="❓ ">❓ Question</button>
+      <button data-insert="➡️ ">➡️ Apply</button>
+      <button data-insert="🙏 ">🙏 Prayer</button>
+    </div>
+
+    <textarea id="fBody" class="body-input" placeholder="Start typing your notes…&#10;&#10;Tip: use the buttons above to mark key points, verses, questions, applications and prayers." spellcheck="true"></textarea>
+    <div id="preview" class="preview" hidden></div>
+
+    <div class="editor-footer">
+      <span id="stamp"></span>
+      <button class="text-btn danger" id="deleteBtn">Delete note</button>
+    </div>
+  </main>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<dialog id="settingsDlg">
+  <div class="dlg-head">
+    <h2>Settings</h2>
+    <button class="icon-btn" id="closeSettings" aria-label="Close">✕</button>
+  </div>
+  <div class="dlg-body">
+    <div class="setting">
+      <span>Bible translation<small>Used when you tap a verse reference</small></span>
+      <select id="sTranslation">
+        <option>ESV</option><option>NIV</option><option>KJV</option><option>NKJV</option>
+        <option>NLT</option><option>CSB</option><option>NASB</option><option>AMP</option><option>MSG</option>
+      </select>
+    </div>
+    <div class="setting">
+      <span>Theme</span>
+      <select id="sTheme">
+        <option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option>
+      </select>
+    </div>
+    <div class="setting">
+      <span>Text size</span>
+      <select id="sSize">
+        <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
+      </select>
+    </div>
+
+    <p class="section-title">Backup</p>
+    <p style="margin:6px 0;font-size:.9rem;color:var(--muted)">Notes are saved only on this device. Export a backup now and then so you never lose them.</p>
+    <div class="btn-row">
+      <button class="btn" id="exportJson">⬇ Export backup</button>
+      <button class="btn" id="importBtn">⬆ Import backup</button>
+      <button class="btn" id="exportTxt">📄 Export as text</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+
+    <p class="section-title">Formatting tips</p>
+    <ul class="help-list">
+      <li><code># </code> Heading &nbsp; <code>- </code> Bullet point &nbsp; <code>&gt; </code> Quote</li>
+      <li><code>**bold**</code> &nbsp; <code>*italic*</code></li>
+      <li>Verse references like <span class="ref">John 3:16</span> or <span class="ref">1 Cor 13:4-7</span> become tappable links in Preview.</li>
+    </ul>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:0" id="countLine"></p>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+
+/* =========================================================
+   Storage
+   ========================================================= */
+const STORE_KEY = 'bibleNotes.notes.v1';
+const SETTINGS_KEY = 'bibleNotes.settings.v1';
+
+function loadNotes() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+  catch { return []; }
+}
+function persistNotes() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(notes));
+    return true;
+  } catch (e) {
+    toast('⚠️ Could not save — storage may be full. Export a backup!');
+    return false;
+  }
+}
+function loadSettings() {
+  const defaults = { translation: 'ESV', theme: 'system', size: 'medium' };
+  try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY))); }
+  catch { return defaults; }
+}
+function persistSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+}
+
+let notes = loadNotes();
+let settings = loadSettings();
+
+// Ask the browser not to evict our data when space runs low.
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function todayISO() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function parseTags(s) {
+  return (s || '').split(',').map(t => t.trim()).filter(Boolean);
+}
+function formatDate(iso, opts) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, opts || { month: 'short', day: 'numeric', year: 'numeric' });
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+}
+function download(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* =========================================================
+   Scripture reference detection
+   ========================================================= */
+// Canonical book name followed by accepted spellings/abbreviations (case-sensitive,
+// so "mark 4" in ordinary prose is not linked but "Mark 4" is).
+const BOOKS = [
+  ['Genesis','Gen','Ge','Gn'], ['Exodus','Exod','Ex'], ['Leviticus','Lev','Lv'], ['Numbers','Num','Nm'],
+  ['Deuteronomy','Deut','Dt'], ['Joshua','Josh','Jos'], ['Judges','Judg','Jdg'], ['Ruth','Ru'],
+  ['1 Samuel','1 Sam','1 Sa'], ['2 Samuel','2 Sam','2 Sa'], ['1 Kings','1 Kgs','1 Ki'], ['2 Kings','2 Kgs','2 Ki'],
+  ['1 Chronicles','1 Chron','1 Chr'], ['2 Chronicles','2 Chron','2 Chr'], ['Ezra','Ezr'], ['Nehemiah','Neh'],
+  ['Esther','Esth','Est'], ['Job'], ['Psalms','Psalm','Pss','Ps','Psa'], ['Proverbs','Prov','Pr','Prv'],
+  ['Ecclesiastes','Eccles','Eccl','Ecc'], ['Song of Solomon','Song of Songs','Song','SOS'], ['Isaiah','Isa'],
+  ['Jeremiah','Jer'], ['Lamentations','Lam'], ['Ezekiel','Ezek','Eze'], ['Daniel','Dan','Dn'], ['Hosea','Hos'],
+  ['Joel'], ['Amos'], ['Obadiah','Obad','Ob'], ['Jonah','Jon'], ['Micah','Mic'], ['Nahum','Nah'],
+  ['Habakkuk','Hab'], ['Zephaniah','Zeph'], ['Haggai','Hag'], ['Zechariah','Zech'], ['Malachi','Mal'],
+  ['Matthew','Matt','Mt'], ['Mark','Mk','Mrk'], ['Luke','Lk'], ['John','Jn','Jhn'], ['Acts'],
+  ['Romans','Rom','Ro'], ['1 Corinthians','1 Cor','1 Co'], ['2 Corinthians','2 Cor','2 Co'],
+  ['Galatians','Gal'], ['Ephesians','Eph'], ['Philippians','Phil','Php'], ['Colossians','Col'],
+  ['1 Thessalonians','1 Thess','1 Th'], ['2 Thessalonians','2 Thess','2 Th'], ['1 Timothy','1 Tim','1 Ti'],
+  ['2 Timothy','2 Tim','2 Ti'], ['Titus','Tit'], ['Philemon','Philem','Phm'], ['Hebrews','Heb'],
+  ['James','Jas','Jm'], ['1 Peter','1 Pet','1 Pt'], ['2 Peter','2 Pet','2 Pt'], ['1 John','1 Jn','1 Jhn'],
+  ['2 John','2 Jn'], ['3 John','3 Jn'], ['Jude'], ['Revelation','Rev','Rv'],
+];
+const BOOK_LOOKUP = new Map();
+for (const [canon, ...alts] of BOOKS) {
+  for (const name of [canon, ...alts]) BOOK_LOOKUP.set(name.replace(/\s+/g, '').toLowerCase(), canon);
+}
+const bookAlternation = BOOKS.flat()
+  .sort((a, b) => b.length - a.length)
+  .map(n => n.replace(/\s+/g, '\\s?'))
+  .join('|');
+// e.g. "John 3:16", "1 Cor. 13:4-7", "Ps 23", "Romans 8:28–39", "Gen 1:1-2:3"
+const REF_RE = new RegExp(
+  `(^|[^A-Za-z0-9])((${bookAlternation})\\.?\\s?(\\d{1,3})(?::(\\d{1,3})(?:\\s?[-–]\\s?\\d{1,3}(?::\\d{1,3})?)?)?)(?![A-Za-z0-9])`,
+  'g'
+);
+
+function refUrl(ref) {
+  return 'https://www.biblegateway.com/passage/?search=' + encodeURIComponent(ref) +
+    '&version=' + encodeURIComponent(settings.translation);
+}
+
+/** Wrap Bible references in already-HTML-escaped text with links. */
+function linkifyRefs(escaped) {
+  return escaped.replace(REF_RE, (m, pre, ref, book) => {
+    const canon = BOOK_LOOKUP.get(book.replace(/\s+/g, '').toLowerCase()) || book;
+    const normalized = ref.replace(new RegExp('^' + book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.?\\s?'), canon + ' ');
+    return `${pre}<a href="${refUrl(normalized)}" target="_blank" rel="noopener">${ref}</a>`;
+  });
+}
+
+/* =========================================================
+   Lightweight note formatting (for Preview)
+   ========================================================= */
+const CALLOUTS = [
+  { mark: '⭐', cls: 'key' },
+  { mark: '📖', cls: 'verse' },
+  { mark: '❓', cls: 'question' },
+  { mark: '➡️', cls: 'apply' },
+  { mark: '➡', cls: 'apply' },
+  { mark: '🙏', cls: 'prayer' },
+];
+
+function inline(text) {
+  let s = linkifyRefs(escapeHtml(text));
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/__(.+?)__/g, '<u>$1</u>');
+  return s;
+}
+
+function renderBody(text) {
+  const out = [];
+  let inList = false;
+  for (const raw of (text || '').split('\n')) {
+    const line = raw.replace(/\s+$/, '');
+    const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    if (bullet) {
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push(`<li>${inline(bullet[1])}</li>`);
+      continue;
+    }
+    if (inList) { out.push('</ul>'); inList = false; }
+    if (!line.trim()) { out.push('<div class="gap"></div>'); continue; }
+
+    let m;
+    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push(`<h3>${inline(m[1])}</h3>`); continue; }
+    if ((m = line.match(/^>\s?(.*)$/))) { out.push(`<blockquote>${inline(m[1])}</blockquote>`); continue; }
+    const trimmed = line.trimStart();
+    const c = CALLOUTS.find(c => trimmed.startsWith(c.mark));
+    if (c) {
+      const rest = trimmed.slice(c.mark.length).replace(/^️/, '').trim();
+      out.push(`<p class="callout ${c.cls}"><span class="mark">${c.mark === '➡' ? '➡️' : c.mark}</span>${inline(rest)}</p>`);
+      continue;
+    }
+    out.push(`<p>${inline(line)}</p>`);
+  }
+  if (inList) out.push('</ul>');
+  return out.join('');
+}
+
+/* =========================================================
+   Notes CRUD
+   ========================================================= */
+const TEMPLATES = {
+  sermon: '',
+  study: '',
+  soap: '# Scripture\n📖 \n\n# Observation\n- \n\n# Application\n➡️ \n\n# Prayer\n🙏 ',
+};
+
+function createNote(kind) {
+  const note = {
+    id: uid(),
+    type: kind === 'sermon' ? 'sermon' : 'study',
+    title: '',
+    date: todayISO(),
+    passages: '',
+    speaker: '',
+    location: '',
+    series: '',
+    tags: [],
+    body: TEMPLATES[kind] || '',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  // Pre-fill church from the most recent sermon, since it's usually the same.
+  if (note.type === 'sermon') {
+    const last = notes.filter(n => n.type === 'sermon' && n.location).sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (last) note.location = last.location;
+  }
+  notes.push(note);
+  persistNotes();
+  return note;
+}
+
+function getNote(id) { return notes.find(n => n.id === id); }
+
+function isBlank(n) {
+  return !n.title.trim() && !n.passages.trim() && !n.speaker.trim() &&
+    (!n.body.trim() || n.body === TEMPLATES.soap);
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  persistNotes();
+}
+
+function displayTitle(n) {
+  if (n.title.trim()) return n.title.trim();
+  if (n.passages.trim()) return n.passages.trim();
+  const firstLine = n.body.split('\n').map(l => l.replace(/^[#>\-*•\s]+/, '').trim()).find(Boolean);
+  return firstLine || (n.type === 'sermon' ? 'Untitled sermon' : 'Untitled study');
+}
+
+const MARKER_RE = /^(?:⭐|📖|❓|➡️?|🙏|\uFE0F|[>\-*•\s])+/u;
+function snippetOf(body) {
+  return body.split('\n')
+    .filter(l => !/^\s*#/.test(l))
+    .map(l => l.replace(MARKER_RE, '').trim())
+    .filter(Boolean)
+    .join(' · ');
+}
+
+function noteAsText(n) {
+  const lines = [displayTitle(n)];
+  const meta = [formatDate(n.date)];
+  if (n.speaker) meta.push(n.speaker);
+  if (n.location) meta.push(n.location);
+  lines.push(meta.filter(Boolean).join(' · '));
+  if (n.series) lines.push('Series: ' + n.series);
+  if (n.passages) lines.push('Scripture: ' + n.passages);
+  if (n.tags.length) lines.push('Tags: ' + n.tags.join(', '));
+  lines.push('', n.body.trim());
+  return lines.join('\n');
+}
+
+/* =========================================================
+   List view
+   ========================================================= */
+let filter = { type: 'all', tag: null, q: '' };
+
+function renderChips() {
+  const allTags = [...new Set(notes.flatMap(n => n.tags))].sort((a, b) => a.localeCompare(b));
+  const chips = [
+    { label: 'All', type: 'all' },
+    { label: '⛪ Sermons', type: 'sermon' },
+    { label: '📖 Studies', type: 'study' },
+    ...allTags.map(t => ({ label: '#' + t, tag: t })),
+  ];
+  $('#chips').innerHTML = chips.map((c, i) => {
+    const pressed = c.tag ? filter.tag === c.tag : (filter.type === c.type && !filter.tag);
+    return `<button class="chip" data-i="${i}" aria-pressed="${pressed}">${escapeHtml(c.label)}</button>`;
+  }).join('');
+  $$('#chips .chip').forEach(btn => btn.addEventListener('click', () => {
+    const c = chips[+btn.dataset.i];
+    if (c.tag) { filter.tag = filter.tag === c.tag ? null : c.tag; }
+    else { filter.type = c.type; filter.tag = null; }
+    renderList();
+  }));
+}
+
+function matches(n) {
+  if (filter.type !== 'all' && n.type !== filter.type) return false;
+  if (filter.tag && !n.tags.includes(filter.tag)) return false;
+  if (filter.q) {
+    const hay = [n.title, n.passages, n.speaker, n.location, n.series, n.tags.join(' '), n.body].join(' ').toLowerCase();
+    return filter.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+  }
+  return true;
+}
+
+function renderList() {
+  renderChips();
+  const list = notes.filter(matches).sort((a, b) =>
+    (b.date || '').localeCompare(a.date || '') || b.updatedAt - a.updatedAt);
+  const el = $('#noteList');
+
+  if (!list.length) {
+    el.innerHTML = notes.length
+      ? `<div class="empty"><div class="big">🔍</div><p>No notes match your search.</p></div>`
+      : `<div class="empty"><div class="big">📖</div><p><strong>No notes yet.</strong></p>
+         <p>Tap <strong>+ New note</strong> to take notes on Sunday’s sermon or start a Bible study.</p></div>`;
+    return;
+  }
+
+  let html = '';
+  let lastMonth = '';
+  for (const n of list) {
+    const month = n.date ? formatDate(n.date, { month: 'long', year: 'numeric' }) : 'No date';
+    if (month !== lastMonth) { html += `<div class="month">${escapeHtml(month)}</div>`; lastMonth = month; }
+    const snippet = snippetOf(n.body);
+    const sub = [formatDate(n.date, { month: 'short', day: 'numeric' }), n.speaker].filter(Boolean).join(' · ');
+    html += `<button class="card" data-id="${n.id}">
+      <div class="card-top"><span class="badge ${n.type}">${n.type}</span><span>${escapeHtml(sub)}</span></div>
+      <h2>${escapeHtml(displayTitle(n))}</h2>
+      ${n.passages && n.title ? `<div class="passages">${escapeHtml(n.passages)}</div>` : ''}
+      ${snippet ? `<div class="snippet">${escapeHtml(snippet.slice(0, 220))}</div>` : ''}
+      ${n.tags.length ? `<div class="tags">${n.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+    </button>`;
+  }
+  el.innerHTML = html;
+  $$('#noteList .card').forEach(c => c.addEventListener('click', () => { location.hash = '#/note/' + c.dataset.id; }));
+}
+
+$('#search').addEventListener('input', e => { filter.q = e.target.value.trim(); renderList(); });
+
+// New-note floating button
+function toggleFab(open) {
+  $('#fabMenu').hidden = !open;
+  $('#fab').setAttribute('aria-expanded', String(open));
+}
+$('#fab').addEventListener('click', e => { e.stopPropagation(); toggleFab($('#fabMenu').hidden); });
+document.addEventListener('click', e => { if (!e.target.closest('.fab-wrap')) toggleFab(false); });
+$$('#fabMenu button').forEach(b => b.addEventListener('click', () => {
+  toggleFab(false);
+  const n = createNote(b.dataset.new);
+  location.hash = '#/note/' + n.id + '/new';
+}));
+
+/* =========================================================
+   Editor view
+   ========================================================= */
+let current = null;
+let saveTimer = null;
+let previewMode = false;
+
+const F = {
+  title: $('#fTitle'), passages: $('#fPassages'), date: $('#fDate'), speaker: $('#fSpeaker'),
+  location: $('#fLocation'), series: $('#fSeries'), tags: $('#fTags'), tagsStudy: $('#fTagsStudy'), body: $('#fBody'),
+};
+
+function openEditor(id, isNew) {
+  const n = getNote(id);
+  if (!n) { location.hash = ''; return; }
+  current = n;
+  F.title.value = n.title;
+  F.passages.value = n.passages;
+  F.date.value = n.date;
+  F.speaker.value = n.speaker;
+  F.location.value = n.location;
+  F.series.value = n.series;
+  F.tags.value = F.tagsStudy.value = n.tags.join(', ');
+  F.body.value = n.body;
+  $('#moreDetails').open = false;
+  setType(n.type, false);
+  setPreview(false);
+  $('#saveState').textContent = '';
+  updateStamp();
+  $('#listView').hidden = true;
+  $('#editorView').hidden = false;
+  window.scrollTo(0, 0);
+  if (isNew) setTimeout(() => (n.type === 'sermon' ? F.title : F.passages).focus(), 50);
+}
+
+function setType(type, save = true) {
+  current.type = type;
+  $$('.type-toggle button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.type === type)));
+  $$('.sermon-only').forEach(el => { el.hidden = type !== 'sermon'; });
+  $$('.study-only').forEach(el => { el.hidden = type !== 'study'; });
+  $('#editorHeading').textContent = type === 'sermon' ? 'Sermon notes' : 'Bible study';
+  F.title.placeholder = type === 'sermon' ? 'Sermon title' : 'Study title (optional)';
+  if (save) scheduleSave();
+}
+$$('.type-toggle button').forEach(b => b.addEventListener('click', () => setType(b.dataset.type)));
+
+function readForm() {
+  if (!current) return;
+  current.title = F.title.value;
+  current.passages = F.passages.value;
+  current.date = F.date.value;
+  current.speaker = F.speaker.value;
+  current.location = F.location.value;
+  current.series = F.series.value;
+  current.body = F.body.value;
+}
+
+function scheduleSave() {
+  $('#saveState').textContent = 'Editing…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 500);
+}
+function saveNow() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  if (!current) return;
+  readForm();
+  current.updatedAt = Date.now();
+  if (persistNotes()) $('#saveState').textContent = 'Saved ✓';
+  updateStamp();
+}
+function updateStamp() {
+  if (!current) return;
+  $('#stamp').textContent = 'Last edited ' + new Date(current.updatedAt).toLocaleString(undefined,
+    { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+['title', 'passages', 'date', 'speaker', 'location', 'series', 'body'].forEach(k =>
+  F[k].addEventListener('input', scheduleSave));
+
+// Two tag inputs (one per layout) share the same data.
+[F.tags, F.tagsStudy].forEach(input => input.addEventListener('input', () => {
+  if (!current) return;
+  current.tags = parseTags(input.value);
+  (input === F.tags ? F.tagsStudy : F.tags).value = input.value;
+  scheduleSave();
+}));
+
+// Save whenever the app is backgrounded or closed (e.g. phone locked mid-sermon).
+document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) saveNow(); });
+window.addEventListener('pagehide', () => { if (saveTimer) saveNow(); });
+
+function closeEditor() {
+  if (current) {
+    if (saveTimer) saveNow();
+    if (isBlank(current)) deleteNote(current.id);
+    current = null;
+  }
+  $('#editorView').hidden = true;
+  $('#listView').hidden = false;
+  renderList();
+}
+
+$('#backBtn').addEventListener('click', () => {
+  if (history.length > 1 && location.hash.startsWith('#/note/')) history.back();
+  else location.hash = '';
+});
+
+$('#deleteBtn').addEventListener('click', () => {
+  if (!current) return;
+  if (!confirm(`Delete “${displayTitle(current)}”? This can’t be undone.`)) return;
+  clearTimeout(saveTimer); saveTimer = null;
+  deleteNote(current.id);
+  current = null;
+  location.hash = '';
+  toast('Note deleted');
+});
+
+$('#shareBtn').addEventListener('click', async () => {
+  if (!current) return;
+  saveNow();
+  const text = noteAsText(current);
+  if (navigator.share) {
+    try { await navigator.share({ title: displayTitle(current), text }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(text); toast('Copied note to clipboard'); }
+  catch { download(displayTitle(current).replace(/[^\w\- ]+/g, '') + '.txt', text, 'text/plain'); }
+});
+
+/* ----- Toolbar: insert markers at the start of the current line ----- */
+function insertMarker(marker) {
+  const ta = F.body;
+  if (previewMode) setPreview(false);
+  const { value, selectionStart: pos } = ta;
+  const lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+  const lineEnd = value.indexOf('\n', pos) === -1 ? value.length : value.indexOf('\n', pos);
+  const line = value.slice(lineStart, lineEnd);
+  let insertAt, text;
+  if (line.trim() === '') { insertAt = lineStart; text = marker; ta.setRangeText('', lineStart, lineEnd); }
+  else { insertAt = lineEnd; text = '\n' + marker; }
+  ta.setRangeText(text, insertAt, insertAt, 'end');
+  ta.focus();
+  scheduleSave();
+}
+$$('#toolbar [data-insert]').forEach(b => {
+  // Keep the keyboard open: don't let the button steal focus from the textarea.
+  b.addEventListener('mousedown', e => e.preventDefault());
+  b.addEventListener('click', () => insertMarker(b.dataset.insert));
+});
+
+/* ----- Continue bullet lists when pressing Enter ----- */
+F.body.addEventListener('input', e => {
+  if (e.inputType !== 'insertLineBreak' && e.inputType !== 'insertParagraph') return;
+  const ta = F.body;
+  const pos = ta.selectionStart;
+  const prevEnd = pos - 1;
+  const prevStart = ta.value.lastIndexOf('\n', prevEnd - 1) + 1;
+  const prev = ta.value.slice(prevStart, prevEnd);
+  const m = prev.match(/^(\s*)([-*•])\s+(.*)$/) || prev.match(/^(\s*)([-*•])\s*$/);
+  if (!m) return;
+  if (!m[3] || !m[3].trim()) {
+    // Empty bullet + Enter ends the list.
+    ta.setRangeText('', prevStart, pos, 'end');
+  } else {
+    ta.setRangeText(`${m[1]}${m[2]} `, pos, pos, 'end');
+  }
+});
+
+/* ----- Edit / Preview ----- */
+function setPreview(on) {
+  previewMode = on;
+  if (on) {
+    readForm();
+    $('#preview').innerHTML = renderBody(current.body) ||
+      '<p style="color:var(--muted)">Nothing here yet.</p>';
+  }
+  $('#preview').hidden = !on;
+  F.body.hidden = on;
+  $('#modeBtn').textContent = on ? '✏️ Edit' : '👁 Preview';
+}
+$('#modeBtn').addEventListener('mousedown', e => e.preventDefault());
+$('#modeBtn').addEventListener('click', () => setPreview(!previewMode));
+
+/* =========================================================
+   Routing (so the phone's Back button works)
+   ========================================================= */
+function route() {
+  const m = location.hash.match(/^#\/note\/([^/]+)(\/new)?$/);
+  if (m) {
+    if (current && current.id !== m[1]) closeEditor();
+    if (!current || current.id !== m[1]) openEditor(m[1], !!m[2]);
+  } else {
+    closeEditor();
+  }
+}
+window.addEventListener('hashchange', route);
+
+/* =========================================================
+   Settings, backup & restore
+   ========================================================= */
+function applySettings() {
+  const root = document.documentElement;
+  if (settings.theme === 'system') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', settings.theme);
+  root.setAttribute('data-size', settings.size);
+}
+
+$('#settingsBtn').addEventListener('click', () => {
+  $('#sTranslation').value = settings.translation;
+  $('#sTheme').value = settings.theme;
+  $('#sSize').value = settings.size;
+  const s = notes.filter(n => n.type === 'sermon').length;
+  $('#countLine').textContent = `${notes.length} note${notes.length === 1 ? '' : 's'} · ${s} sermon${s === 1 ? '' : 's'} · ${notes.length - s} stud${notes.length - s === 1 ? 'y' : 'ies'}`;
+  $('#settingsDlg').showModal();
+});
+$('#closeSettings').addEventListener('click', () => $('#settingsDlg').close());
+$('#settingsDlg').addEventListener('click', e => { if (e.target === $('#settingsDlg')) $('#settingsDlg').close(); });
+
+[['#sTranslation', 'translation'], ['#sTheme', 'theme'], ['#sSize', 'size']].forEach(([sel, key]) =>
+  $(sel).addEventListener('change', e => { settings[key] = e.target.value; persistSettings(); applySettings(); }));
+
+$('#exportJson').addEventListener('click', () => {
+  const data = { app: 'bible-notes', version: 1, exportedAt: new Date().toISOString(), notes };
+  download(`bible-notes-backup-${todayISO()}.json`, JSON.stringify(data, null, 2), 'application/json');
+});
+
+$('#exportTxt').addEventListener('click', () => {
+  const sorted = [...notes].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const text = sorted.map(noteAsText).join('\n\n' + '─'.repeat(40) + '\n\n');
+  download(`bible-notes-${todayISO()}.txt`, text, 'text/plain');
+});
+
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const incoming = Array.isArray(data) ? data : data.notes;
+    if (!Array.isArray(incoming)) throw new Error('bad format');
+    let added = 0, updated = 0;
+    for (const raw of incoming) {
+      if (!raw || !raw.id) continue;
+      const n = normalizeNote(raw);
+      const existing = getNote(n.id);
+      if (!existing) { notes.push(n); added++; }
+      else if (n.updatedAt > existing.updatedAt) { Object.assign(existing, n); updated++; }
+    }
+    persistNotes();
+    renderList();
+    toast(`Imported: ${added} new, ${updated} updated`);
+  } catch {
+    toast('⚠️ That file isn’t a Bible Notes backup');
+  }
+});
+
+function normalizeNote(n) {
+  return {
+    id: String(n.id),
+    type: n.type === 'sermon' ? 'sermon' : 'study',
+    title: String(n.title || ''),
+    date: typeof n.date === 'string' ? n.date : '',
+    passages: String(n.passages || ''),
+    speaker: String(n.speaker || ''),
+    location: String(n.location || ''),
+    series: String(n.series || ''),
+    tags: Array.isArray(n.tags) ? n.tags.map(String) : parseTags(n.tags),
+    body: String(n.body || ''),
+    createdAt: Number(n.createdAt) || Date.now(),
+    updatedAt: Number(n.updatedAt) || Date.now(),
+  };
+}
+notes = notes.map(normalizeNote);
+
+/* =========================================================
+   Start up
+   ========================================================= */
+applySettings();
+renderList();
+route();
+
+// Offline support + "Add to Home Screen" (only works when served over http/https).
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
