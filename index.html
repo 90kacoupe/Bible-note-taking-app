@@ -578,28 +578,87 @@ const USFM_BOOKS = [
   '1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV',
 ];
 
-/** "JHN.3.16", "JHN.3.16-JHN.3.18" or "GEN.1.31-GEN.2.2". */
+/** "JHN.3.16", "JHN.3.16-18" (the documented range form) or "GEN.1.31-2.2" across chapters. */
 function usfmPassage(r) {
-  const b = USFM_BOOKS[r.book];
-  const start = `${b}.${r.ch}.${r.v1}`;
-  return (r.ch2 === r.ch && r.v2 === r.v1) ? start : `${start}-${b}.${r.ch2}.${r.v2}`;
+  const start = `${USFM_BOOKS[r.book]}.${r.ch}.${r.v1}`;
+  if (r.ch2 === r.ch && r.v2 === r.v1) return start;
+  return r.ch2 === r.ch ? `${start}-${r.v2}` : `${start}-${r.ch2}.${r.v2}`;
 }
 
-async function fetchYouVersion(versionId, r, key) {
+/** Fetch a passage or chapter ("JHN.7") as HTML. Resolves to '' if YouVersion doesn't have it. */
+async function yvPassageHtml(versionId, passageId, key) {
   const params = new URLSearchParams({ format: 'html', include_headings: 'false', include_notes: 'false' });
-  const res = await fetch(`${YV_API}/v1/bibles/${versionId}/passages/${usfmPassage(r)}?${params}`, {
+  const res = await fetch(`${YV_API}/v1/bibles/${versionId}/passages/${passageId}?${params}`, {
     headers: { 'x-yvp-app-key': key },
   });
   if (res.status === 401) throw new KeyError('key wasn’t accepted');
   if (res.status === 403) throw new KeyError('isn’t available with this key');
-  if (res.status === 404) return '';
+  if (res.status === 404 || res.status === 400) return '';
   if (!res.ok) throw new Error('YouVersion ' + res.status);
   const data = await res.json();
-  const doc = new DOMParser().parseFromString(data.content || '', 'text/html');
-  // Drop headings and notes (in case they're sent anyway); keep verse numbers as [n].
+  return data.content || '';
+}
+
+/** Parse passage HTML, dropping headings and notes (in case they're sent anyway). */
+function yvDoc(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
   doc.querySelectorAll('.yv-h, .yv-n, script, style').forEach(el => el.remove());
+  return doc;
+}
+
+/** Passage text with verse numbers as [n]. */
+function yvText(html) {
+  const doc = yvDoc(html);
   doc.querySelectorAll('.yv-vlbl').forEach(el => { el.textContent = ` [${el.textContent.trim()}] `; });
   return htmlText(doc);
+}
+
+/** Map of verse number → text for a whole chapter's HTML. */
+function yvVerseMap(html) {
+  const doc = yvDoc(html);
+  doc.querySelectorAll('.yv-vlbl').forEach(el => el.remove());
+  doc.body.querySelectorAll('div, p, br, li').forEach(el => el.after(' '));
+  const verses = new Map();
+  let verse = 0;
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.classList.contains('yv-v')) verse = parseInt(node.getAttribute('v'), 10) || verse;
+    } else if (verse) {
+      verses.set(verse, (verses.get(verse) || '') + node.textContent);
+    }
+  }
+  return verses;
+}
+
+const yvChapterCache = new Map();
+
+/** Build a range from whole chapters: works whatever range syntax the service accepts. */
+async function yvRangeFromChapters(versionId, r, key) {
+  const parts = [];
+  for (let c = r.ch; c <= r.ch2; c++) {
+    const id = `${versionId}|${USFM_BOOKS[r.book]}.${c}`;
+    if (!yvChapterCache.has(id)) yvChapterCache.set(id, yvVerseMap(await yvPassageHtml(versionId, `${USFM_BOOKS[r.book]}.${c}`, key)));
+    const from = c === r.ch ? r.v1 : 1;
+    const to = c === r.ch2 ? r.v2 : Infinity;
+    for (const [v, text] of yvChapterCache.get(id)) {
+      if (v >= from && v <= to && text.trim()) parts.push(`[${c !== r.ch && v === 1 ? c + ':' + v : v}] ${text.trim()}`);
+    }
+  }
+  return parts.join(' ');
+}
+
+async function fetchYouVersion(versionId, r, key) {
+  if (r.ch2 === r.ch && r.v2 === r.v1) return yvText(await yvPassageHtml(versionId, usfmPassage(r), key));
+  // A range: ask for it directly, and check that it really ends at the last verse asked for.
+  try {
+    const html = await yvPassageHtml(versionId, usfmPassage(r), key);
+    const labels = [...yvDoc(html).querySelectorAll('.yv-vlbl')].map(el => el.textContent.trim());
+    if (labels.includes(String(r.v1)) && labels.includes(String(r.v2))) return yvText(html);
+  } catch (e) {
+    if (e instanceof KeyError) throw e;
+  }
+  return yvRangeFromChapters(versionId, r, key);
 }
 
 /** Ask YouVersion which English Bibles this app key can use. */

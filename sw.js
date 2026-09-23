@@ -1,6 +1,6 @@
 // Offline cache for the app shell. Bump VERSION whenever you change a file
 // so phones pick up the update.
-const VERSION = 'bible-notes-v5';
+const VERSION = 'bible-notes-v6';
 const FILES = ['./', './index.html', './styles.css', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   './bible/bsb.js', './bible/kjv.js',
   './fonts/caveat-latin-600-normal.woff2',
