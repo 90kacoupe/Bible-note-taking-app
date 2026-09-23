@@ -220,7 +220,8 @@
   .key-row input { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 16px; font-family: ui-monospace, monospace; }
   .key-row small { color: var(--muted); font-size: .8rem; }
   .key-row a { color: var(--link); }
-  .setting select { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; font-size: 16px; }
+  .setting > span { flex: 1 1 auto; min-width: 0; }
+  .setting select { max-width: 58%; text-overflow: ellipsis; border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; font-size: 16px; }
   .btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
   .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .section-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 16px 0 0; }
@@ -339,6 +340,7 @@
           <option value="ESV">ESV – English Standard</option>
           <option value="NLT">NLT – New Living</option>
         </optgroup>
+        <optgroup label="YouVersion (online)" id="yvGroup"></optgroup>
       </select>
     </div>
     <div class="key-row" id="keyRow" hidden>
@@ -346,6 +348,12 @@
       <input id="sApiKey" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
       <small><span id="keyHelp"></span> <a id="keyLink" target="_blank" rel="noopener">Get a key</a><br>
         Needs internet when a verse is added. Offline, the BSB is used instead. Your key is stored only on this device.</small>
+    </div>
+    <div class="key-row">
+      <label for="sYvKey">YouVersion app key</label>
+      <input id="sYvKey" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your key">
+      <div class="btn-row" style="margin-top:0"><button class="btn" id="yvLoad">Load my YouVersion Bibles</button></div>
+      <small id="yvStatus"></small>
     </div>
     <div class="setting">
       <span>Auto-insert verses<small>Type a reference like John 3:16, then press Enter</small></span>
@@ -418,7 +426,7 @@ function persistNotes() {
   }
 }
 function loadSettings() {
-  const defaults = { translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {} };
+  const defaults = { translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {}, yvVersions: [] };
   try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY))); }
   catch { return defaults; }
 }
@@ -556,11 +564,26 @@ const TRANSLATIONS = {
     signup: 'https://api.nlt.to/',
     help: 'Leave blank to use Tyndale’s public test key (light use), or get your own free key at api.nlt.to.',
   },
-  // To add another service later (e.g. YouVersion, or API.Bible for the NIV), add an entry
-  // with a `fetch(reference, key)` function that resolves to the passage text with verse
-  // numbers written as [16], or to '' if the passage isn't found.
+  // To add another service, add an entry with a `fetch(reference, key, ref)` function that
+  // resolves to the passage text with verse numbers written as [16], or to '' if the passage
+  // isn't found. YouVersion translations are added at runtime; see translationFor().
 };
-const isOnline = code => !!(TRANSLATIONS[code] && TRANSLATIONS[code].fetch);
+
+/** Look up a translation by code: 'BSB', 'ESV', … or 'YV:<id>' for a YouVersion Bible. */
+function translationFor(code) {
+  const t = TRANSLATIONS[code];
+  if (t) return { abbr: code, keyId: code, ...t };
+  const m = /^YV:(\d+)$/.exec(code || '');
+  if (!m) return null;
+  const v = (settings.yvVersions || []).find(v => String(v.id) === m[1]);
+  return {
+    abbr: v ? v.abbr : 'YouVersion',
+    name: v ? v.title : 'YouVersion',
+    keyId: 'YV',
+    fetch: (ref, key, r) => fetchYouVersion(m[1], r, key),
+  };
+}
+const isOnline = code => !!(translationFor(code) || {}).fetch;
 
 const BOOK_INDEX = new Map(BOOKS.map(([canon], i) => [canon, i]));
 const MAX_VERSES = 30;
@@ -584,7 +607,7 @@ function loadBible(code) {
 }
 
 /** The bundled translation used for the selected one (online translations fall back to BSB). */
-const offlineCode = code => (isOnline(code) || !TRANSLATIONS[code]) ? 'BSB' : code;
+const offlineCode = code => (isOnline(code) || !translationFor(code)) ? 'BSB' : code;
 
 // Only references with chapter AND verse, e.g. "John 3:16", "rom 8:28-30", "Gen 1:1-2:3".
 // Case-insensitive, since "chapter:verse" rarely shows up in ordinary prose.
@@ -660,6 +683,14 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 }
 
+/** Plain text of a parsed HTML passage, keeping a space between lines of poetry/paragraphs. */
+function htmlText(doc) {
+  if (!doc.body) return '';
+  doc.body.querySelectorAll('div, p, br, li, h1, h2, h3, h4, h5, h6').forEach(el => el.after(' '));
+  return doc.body.textContent;
+}
+
+/** The service refused the request (bad key, or a translation the key can't use). */
 class KeyError extends Error {}
 
 // ESV API v3 (Crossway): https://api.esv.org/docs/passage-text/
@@ -679,7 +710,7 @@ async function fetchEsv(ref, key) {
   const res = await fetch('https://api.esv.org/v3/passage/text/?' + params, {
     headers: { Authorization: 'Token ' + key },
   });
-  if (res.status === 401 || res.status === 403) throw new KeyError();
+  if (res.status === 401 || res.status === 403) throw new KeyError('key wasn’t accepted');
   if (!res.ok) throw new Error('ESV ' + res.status);
   const data = await res.json();
   return (data.passages || []).join(' ');
@@ -689,14 +720,78 @@ async function fetchEsv(ref, key) {
 async function fetchNlt(ref, key) {
   const params = new URLSearchParams({ ref, version: 'NLT', key });
   const res = await fetch('https://api.nlt.to/api/passages?' + params);
-  if (res.status === 401 || res.status === 403) throw new KeyError();
+  if (res.status === 401 || res.status === 403) throw new KeyError('key wasn’t accepted');
   if (!res.ok) throw new Error('NLT ' + res.status);
   const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
   // Drop headings, footnotes and chapter numbers; keep verse numbers as [n].
   doc.querySelectorAll('h1, h2, h3, h4, h5, h6, .tn, .a-tn, .subhead, .chapter-number, .psa-title, script, style')
     .forEach(el => el.remove());
   doc.querySelectorAll('.vn').forEach(el => { el.textContent = ` [${el.textContent.trim()}] `; });
-  return doc.body ? doc.body.textContent : '';
+  return htmlText(doc);
+}
+
+// YouVersion Platform API: https://developers.youversion.com/
+// (request format taken from YouVersion's official SDKs, e.g. github.com/youversion/platform-sdk-swift)
+const YV_API = 'https://api.youversion.com';
+const USFM_BOOKS = [
+  'GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA','1KI','2KI','1CH','2CH','EZR','NEH','EST',
+  'JOB','PSA','PRO','ECC','SNG','ISA','JER','LAM','EZK','DAN','HOS','JOL','AMO','OBA','JON','MIC','NAM',
+  'HAB','ZEP','HAG','ZEC','MAL','MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL',
+  '1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV',
+];
+
+/** "JHN.3.16", "JHN.3.16-JHN.3.18" or "GEN.1.31-GEN.2.2". */
+function usfmPassage(r) {
+  const b = USFM_BOOKS[r.book];
+  const start = `${b}.${r.ch}.${r.v1}`;
+  return (r.ch2 === r.ch && r.v2 === r.v1) ? start : `${start}-${b}.${r.ch2}.${r.v2}`;
+}
+
+async function fetchYouVersion(versionId, r, key) {
+  const params = new URLSearchParams({ format: 'html', include_headings: 'false', include_notes: 'false' });
+  const res = await fetch(`${YV_API}/v1/bibles/${versionId}/passages/${usfmPassage(r)}?${params}`, {
+    headers: { 'x-yvp-app-key': key },
+  });
+  if (res.status === 401) throw new KeyError('key wasn’t accepted');
+  if (res.status === 403) throw new KeyError('isn’t available with this key');
+  if (res.status === 404) return '';
+  if (!res.ok) throw new Error('YouVersion ' + res.status);
+  const data = await res.json();
+  const doc = new DOMParser().parseFromString(data.content || '', 'text/html');
+  // Drop headings and notes (in case they're sent anyway); keep verse numbers as [n].
+  doc.querySelectorAll('.yv-h, .yv-n, script, style').forEach(el => el.remove());
+  doc.querySelectorAll('.yv-vlbl').forEach(el => { el.textContent = ` [${el.textContent.trim()}] `; });
+  return htmlText(doc);
+}
+
+/** Ask YouVersion which English Bibles this app key can use. */
+async function fetchYouVersionList(key) {
+  const found = [];
+  let pageToken = null, pages = 0;
+  do {
+    const params = new URLSearchParams({ 'language_ranges[]': 'en', page_size: '99' });
+    ['id', 'abbreviation', 'title', 'localized_abbreviation', 'localized_title'].forEach(f => params.append('fields[]', f));
+    if (pageToken) params.set('page_token', pageToken);
+    const res = await withTimeout(fetch(`${YV_API}/v1/bibles?${params}`, { headers: { 'x-yvp-app-key': key } }), 15000);
+    if (res.status === 401 || res.status === 403) throw new KeyError('key wasn’t accepted');
+    if (res.status === 204) break;
+    if (!res.ok) throw new Error('YouVersion ' + res.status);
+    const data = await res.json();
+    found.push(...(data.data || []));
+    pageToken = data.next_page_token;
+  } while (pageToken && ++pages < 20);
+
+  // Familiar translations first, then the rest alphabetically.
+  const POPULAR = ['NIV', 'ESV', 'NLT', 'NKJV', 'CSB', 'NASB2020', 'NASB1995', 'NASB', 'AMP', 'MSG', 'KJV', 'NRSVUE', 'NET', 'CEV', 'GNT', 'BSB'];
+  const rank = a => { const i = POPULAR.indexOf(a.toUpperCase()); return i === -1 ? POPULAR.length : i; };
+  return found
+    .filter(v => v && v.id != null)
+    .map(v => ({
+      id: v.id,
+      abbr: String(v.localized_abbreviation || v.abbreviation || v.id),
+      title: String(v.localized_title || v.title || ''),
+    }))
+    .sort((a, b) => rank(a.abbr) - rank(b.abbr) || a.abbr.localeCompare(b.abbr));
 }
 
 const onlineCache = new Map();
@@ -707,28 +802,30 @@ const onlineCache = new Map();
  * If an online translation can't be reached, falls back to BSB and says why.
  */
 async function getPassage(r) {
-  const code = TRANSLATIONS[settings.verseText] ? settings.verseText : 'BSB';
+  const code = translationFor(settings.verseText) ? settings.verseText : 'BSB';
+  const t = translationFor(code);
   const local = passageText(await loadBible(offlineCode(code)), r);
   if (!local) return { missing: true };
-  if (!isOnline(code)) return { ...local, code };
+  if (!t.fetch) return { ...local, code };
 
-  const t = TRANSLATIONS[code];
-  const key = ((settings.apiKeys || {})[code] || t.defaultKey || '').trim();
-  if (!key) return { ...local, code: 'BSB', fallback: `add your ${code} key in Settings` };
+  const abbr = t.abbr;
+  const key = ((settings.apiKeys || {})[t.keyId] || t.defaultKey || '').trim();
+  if (!key) return { ...local, code: 'BSB', fallback: `add your ${t.keyId === 'YV' ? 'YouVersion' : abbr} key in Settings` };
 
   // Ask only for what we'd show (the same MAX_VERSES cut as the bundled text).
-  const ref = refLabel({ ...r, ch2: local.endCh, v2: local.endV });
+  const trimmed = { ...r, ch2: local.endCh, v2: local.endV };
+  const ref = refLabel(trimmed);
   const cacheKey = code + '|' + ref;
   try {
     if (!onlineCache.has(cacheKey)) {
-      const raw = await withTimeout(t.fetch(ref, key), ONLINE_TIMEOUT_MS);
+      const raw = await withTimeout(t.fetch(ref, key, trimmed), ONLINE_TIMEOUT_MS);
       onlineCache.set(cacheKey, formatVerseNumbers(raw || '', local.multi));
     }
     const text = onlineCache.get(cacheKey);
-    if (text) return { text, truncated: local.truncated, code };
-    return { ...local, code: 'BSB', fallback: `${code} didn’t return ${ref}` };
+    if (text) return { text, truncated: local.truncated, code: abbr };
+    return { ...local, code: 'BSB', fallback: `${abbr} didn’t return ${ref}` };
   } catch (e) {
-    const why = e instanceof KeyError ? `${code} key wasn’t accepted` : `couldn’t reach ${code}`;
+    const why = e instanceof KeyError ? `${abbr} ${e.message}` : `couldn’t reach ${abbr}`;
     return { ...local, code: 'BSB', fallback: why };
   }
 }
@@ -1270,8 +1367,11 @@ function applySettings() {
 
 $('#settingsBtn').addEventListener('click', () => {
   $('#sTranslation').value = settings.translation;
+  renderVerseTextOptions();
   $('#sVerseText').value = settings.verseText;
   updateKeyRow();
+  $('#sYvKey').value = (settings.apiKeys || {}).YV || '';
+  setYvStatus();
   $('#sAutoVerse').value = settings.autoVerse;
   $('#sTheme').value = settings.theme;
   $('#sSize').value = settings.size;
@@ -1290,12 +1390,61 @@ $('#settingsDlg').addEventListener('click', e => { if (e.target === $('#settings
     if (key === 'verseText') { updateKeyRow(); loadBible(offlineCode(settings.verseText)).catch(() => {}); }
   }));
 
-/** Show the key field only for online translations. */
+/** Fill the YouVersion part of the Verse text list with the Bibles loaded for the key. */
+function renderVerseTextOptions() {
+  const group = $('#yvGroup');
+  const versions = settings.yvVersions || [];
+  group.innerHTML = versions.map(v =>
+    `<option value="YV:${escapeHtml(v.id)}">${escapeHtml(v.abbr)}${v.title ? ' – ' + escapeHtml(v.title) : ''}</option>`).join('');
+  // Keep a selected YouVersion Bible visible even if the list was cleared.
+  if (/^YV:/.test(settings.verseText) && !group.querySelector(`option[value="${CSS.escape(settings.verseText)}"]`)) {
+    group.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(settings.verseText)}">${escapeHtml(translationFor(settings.verseText).abbr)}</option>`);
+  }
+  group.hidden = !group.children.length;
+}
+
+function setYvStatus(msg) {
+  const n = (settings.yvVersions || []).length;
+  $('#yvStatus').textContent = msg || (n
+    ? `${n} English Bible${n === 1 ? '' : 's'} available. Choose one under Verse text. Needs internet when a verse is added; offline, the BSB is used instead.`
+    : 'One key unlocks the translations YouVersion allows for your app (e.g. NIV, NLT). Get a key at platform.youversion.com. Stored only on this device.');
+}
+
+$('#sYvKey').addEventListener('input', e => {
+  settings.apiKeys = Object.assign({}, settings.apiKeys, { YV: e.target.value.trim() });
+  onlineCache.clear();
+  persistSettings();
+});
+
+$('#yvLoad').addEventListener('click', async () => {
+  const key = ((settings.apiKeys || {}).YV || '').trim();
+  if (!key) { setYvStatus('Paste your YouVersion app key first.'); return; }
+  const btn = $('#yvLoad');
+  btn.disabled = true;
+  setYvStatus('Loading…');
+  try {
+    const versions = await fetchYouVersionList(key);
+    if (!versions.length) { setYvStatus('YouVersion didn’t return any English Bibles for this key.'); return; }
+    settings.yvVersions = versions;
+    persistSettings();
+    renderVerseTextOptions();
+    $('#sVerseText').value = settings.verseText;
+    setYvStatus();
+  } catch (e) {
+    setYvStatus(e instanceof KeyError
+      ? 'YouVersion didn’t accept that key. Check it at platform.youversion.com.'
+      : 'Couldn’t reach YouVersion. Check your internet connection and try again.');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/** Show the key field for ESV/NLT (YouVersion has its own section). */
 function updateKeyRow() {
   const code = settings.verseText;
   const t = TRANSLATIONS[code];
-  $('#keyRow').hidden = !isOnline(code);
-  if (!isOnline(code)) return;
+  $('#keyRow').hidden = !(t && t.fetch);
+  if (!(t && t.fetch)) return;
   $('#keyLabel').textContent = `${code} key`;
   $('#sApiKey').value = (settings.apiKeys || {})[code] || '';
   $('#sApiKey').placeholder = t.defaultKey ? `Optional (uses “${t.defaultKey}”)` : 'Paste your key';

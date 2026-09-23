@@ -21,13 +21,20 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
     | **KJV** King James Version | Bundled in the app | Nothing, works offline |
     | **ESV** English Standard Version | Crossway's ESV API | Internet + free key from [api.esv.org](https://api.esv.org/) |
     | **NLT** New Living Translation | Tyndale's NLT API | Internet (built-in test key, or your own free key from [api.nlt.to](https://api.nlt.to/)) |
+    | **YouVersion** (NIV and many more) | [YouVersion Platform](https://developers.youversion.com/) | Internet + your YouVersion app key |
 
     BSB and KJV are public domain, so they can be bundled. ESV and NLT are copyrighted and come from the
     publishers' own services. If an online translation can't be reached, or the key is missing or rejected,
     the verse is added from the BSB and the pop-up says why.
 
-    To add another service later (e.g. YouVersion, or API.Bible for the NIV), add an entry to
-    `TRANSLATIONS` in `index.html` with a `fetch(reference, key)` function.
+    **YouVersion setup:** in Settings, paste your app key under **YouVersion app key** and tap
+    **Load my YouVersion Bibles**. The English Bibles your key can use then appear under **Verse text**.
+
+    Keys are typed into Settings on each device and saved only there. Never put a key in the code,
+    since this repository can be published through GitHub Pages.
+
+    To add another service, add an entry to `TRANSLATIONS` in `index.html` with a
+    `fetch(reference, key, ref)` function.
 - **Quick-mark buttons** for headings, bullet points, ⭐ key points, 📖 verses, ❓ questions, ➡️ applications and 🙏 prayers.
   Bullet lists continue automatically when you press Enter.
 - **Preview mode** shows color-coded notes. Verse references such as `John 3:16` or `1 Cor 13:4-7` become links
