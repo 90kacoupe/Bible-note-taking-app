@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#5b4636">
+<meta name="theme-color" content="#3a1c15">
 <meta name="description" content="Take notes on sermons and personal Bible study.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -12,307 +12,132 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Bible Notes</title>
-<style>
-  :root {
-    --bg: #faf7f2;
-    --surface: #ffffff;
-    --surface-2: #f1ece4;
-    --text: #2b2420;
-    --muted: #7a6f66;
-    --border: #e3dbd0;
-    --accent: #5b4636;
-    --accent-text: #ffffff;
-    --link: #8a5a2b;
-    --sermon: #2f6f8f;
-    --study: #6b7d3a;
-    --key: #fff3c4;
-    --key-border: #e0b93a;
-    --question: #e6f0fa;
-    --question-border: #5b8fc4;
-    --apply: #e8f4ea;
-    --apply-border: #4f9a5d;
-    --prayer: #f3eaf7;
-    --prayer-border: #9b6bb3;
-    --verse: #f6efe5;
-    --verse-border: #b08a5b;
-    --danger: #b3261e;
-    --badge-text: #ffffff;
-    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
-    --radius: 14px;
-    --font-size: 17px;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #171412; --surface: #221e1b; --surface-2: #2d2824; --text: #eee6dc; --muted: #a89c90;
-      --border: #3a332d; --accent: #d7b48a; --accent-text: #1b1612; --link: #e3b27a;
-      --sermon: #79b7d6; --study: #b3c77a;
-      --key: #3a3218; --key-border: #b8952b; --question: #1c2a38; --question-border: #5b8fc4;
-      --apply: #1c2e20; --apply-border: #4f9a5d; --prayer: #2e2234; --prayer-border: #9b6bb3;
-      --verse: #2d261e; --verse-border: #9c7a4f; --danger: #f2b8b5; --badge-text: #111111;
-      --shadow: 0 1px 3px rgba(0,0,0,.4);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #171412; --surface: #221e1b; --surface-2: #2d2824; --text: #eee6dc; --muted: #a89c90;
-    --border: #3a332d; --accent: #d7b48a; --accent-text: #1b1612; --link: #e3b27a;
-    --sermon: #79b7d6; --study: #b3c77a;
-    --key: #3a3218; --key-border: #b8952b; --question: #1c2a38; --question-border: #5b8fc4;
-    --apply: #1c2e20; --apply-border: #4f9a5d; --prayer: #2e2234; --prayer-border: #9b6bb3;
-    --verse: #2d261e; --verse-border: #9c7a4f; --danger: #f2b8b5; --badge-text: #111111;
-    --shadow: 0 1px 3px rgba(0,0,0,.4);
-    color-scheme: dark;
-  }
-  :root[data-size="small"] { --font-size: 15px; }
-  :root[data-size="large"] { --font-size: 20px; }
-
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font: var(--font-size)/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-tap-highlight-color: transparent;
-  }
-  button, input, textarea, select { font: inherit; color: inherit; }
-  button { cursor: pointer; }
-  [hidden] { display: none !important; }
-
-  /* ---------- Top bar ---------- */
-  .topbar {
-    position: sticky; top: 0; z-index: 10;
-    display: flex; align-items: center; gap: 8px;
-    padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
-    background: var(--accent); color: var(--accent-text);
-  }
-  .topbar h1 { font-size: 1.15rem; margin: 0; flex: 1; font-weight: 650; letter-spacing: .2px; }
-  .icon-btn {
-    border: 0; background: transparent; color: inherit;
-    width: 40px; height: 40px; border-radius: 50%;
-    display: inline-grid; place-items: center; font-size: 1.2rem;
-  }
-  .icon-btn:active { background: rgba(255,255,255,.18); }
-  .icon-btn svg { width: 22px; height: 22px; }
-  .save-state { font-size: .8rem; opacity: .85; min-width: 52px; text-align: right; }
-
-  main { max-width: 760px; margin: 0 auto; padding: 12px 16px calc(96px + env(safe-area-inset-bottom)); }
-
-  /* ---------- List view ---------- */
-  .search {
-    width: 100%; padding: 12px 14px; border-radius: 12px;
-    border: 1px solid var(--border); background: var(--surface); font-size: 16px;
-  }
-  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 4px; scrollbar-width: none; }
-  .chips::-webkit-scrollbar { display: none; }
-  .chip {
-    flex: none; border: 1px solid var(--border); background: var(--surface);
-    padding: 6px 12px; border-radius: 999px; font-size: .85rem; white-space: nowrap;
-  }
-  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-
-  .month { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 4px 8px; font-weight: 600; }
-  .card {
-    display: block; width: 100%; text-align: left;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow);
-  }
-  .card:active { transform: scale(.99); }
-  .card-top { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
-  .badge { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; color: var(--badge-text); }
-  .badge.sermon { background: var(--sermon); }
-  .badge.study { background: var(--study); }
-  .card h2 { font-size: 1.05rem; margin: 6px 0 2px; font-weight: 650; }
-  .card .passages { color: var(--link); font-size: .9rem; font-weight: 500; }
-  .card .snippet { color: var(--muted); font-size: .9rem; margin-top: 4px;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card .tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
-  .tag { font-size: .75rem; background: var(--surface-2); padding: 1px 8px; border-radius: 999px; color: var(--muted); }
-
-  .empty { text-align: center; color: var(--muted); padding: 48px 16px; }
-  .empty .big { font-size: 3rem; }
-
-  .fab-wrap { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 20; }
-  .fab {
-    border: 0; background: var(--accent); color: var(--accent-text);
-    height: 56px; min-width: 56px; padding: 0 20px; border-radius: 28px; font-weight: 650; font-size: 1rem;
-    box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px;
-  }
-  .fab-menu { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
-  .fab-menu button {
-    border: 1px solid var(--border); background: var(--surface); padding: 10px 16px; border-radius: 12px;
-    box-shadow: var(--shadow); text-align: left; min-width: 220px;
-  }
-  .fab-menu small { display: block; color: var(--muted); font-size: .8rem; }
-
-  /* ---------- Editor ---------- */
-  .type-toggle { display: flex; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
-  .type-toggle button { flex: 1; border: 0; background: transparent; padding: 8px; border-radius: 9px; font-weight: 600; color: var(--muted); }
-  .type-toggle button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-
-  .title-input {
-    width: 100%; border: 0; background: transparent; font-size: 1.45rem; font-weight: 700;
-    padding: 4px 0; outline: none;
-  }
-  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 12px; }
-  .meta label { min-width: 0; display: flex; flex-direction: column; font-size: .75rem; color: var(--muted); font-weight: 600; gap: 2px; }
-  .meta label.full { grid-column: 1 / -1; }
-  .meta input {
-    border: 1px solid var(--border); background: var(--surface); border-radius: 10px;
-    padding: 9px 10px; font-size: 16px; font-weight: 400; color: var(--text); min-width: 0; width: 100%;
-  }
-  details.more { margin: -4px 0 10px; }
-  details.more summary { color: var(--muted); font-size: .85rem; cursor: pointer; padding: 4px 0; }
-
-  .toolbar {
-    position: sticky; top: calc(60px + env(safe-area-inset-top)); z-index: 5;
-    display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; background: var(--bg); scrollbar-width: none;
-  }
-  .toolbar::-webkit-scrollbar { display: none; }
-  .toolbar button {
-    flex: none; border: 1px solid var(--border); background: var(--surface); border-radius: 10px;
-    padding: 6px 10px; font-size: .85rem; white-space: nowrap;
-  }
-  .toolbar button.mode { font-weight: 600; background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-  .toolbar .sep { flex: none; width: 1px; background: var(--border); margin: 4px 2px; }
-
-  .body-input {
-    width: 100%; min-height: 55vh; resize: vertical; border: 1px solid var(--border);
-    background: var(--surface); border-radius: var(--radius); padding: 14px; font-size: max(16px, var(--font-size));
-    line-height: 1.6; outline: none;
-  }
-  .body-input:focus, .meta input:focus, .search:focus { border-color: var(--accent); outline: none; }
-
-  .preview { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; min-height: 40vh; overflow-wrap: anywhere; }
-  .preview h3 { margin: 14px 0 6px; font-size: 1.1rem; }
-  .preview h3:first-child { margin-top: 0; }
-  .preview p { margin: 4px 0; }
-  .preview ul { margin: 4px 0; padding-left: 22px; }
-  .preview .gap { height: 8px; }
-  .preview a, .ref { color: var(--link); font-weight: 600; text-decoration: none; border-bottom: 1px dotted currentColor; }
-  .preview blockquote { margin: 6px 0; padding: 6px 12px; border-left: 3px solid var(--verse-border); background: var(--verse); border-radius: 0 8px 8px 0; font-style: italic; }
-  .callout { padding: 6px 10px; border-radius: 8px; border-left: 3px solid; margin: 6px 0 !important; }
-  .callout .mark { margin-right: 6px; }
-  .callout.key { background: var(--key); border-color: var(--key-border); font-weight: 600; }
-  .callout.question { background: var(--question); border-color: var(--question-border); }
-  .callout.apply { background: var(--apply); border-color: var(--apply-border); }
-  .callout.prayer { background: var(--prayer); border-color: var(--prayer-border); }
-  .callout.verse { background: var(--verse); border-color: var(--verse-border); }
-
-  .editor-footer { display: flex; gap: 8px; justify-content: space-between; margin-top: 16px; font-size: .8rem; color: var(--muted); align-items: center; }
-  .text-btn { border: 0; background: transparent; padding: 8px 4px; font-weight: 600; }
-  .text-btn.danger { color: var(--danger); }
-
-  /* ---------- Dialog ---------- */
-  dialog {
-    border: 0; border-radius: 18px; padding: 0; width: min(520px, calc(100vw - 32px));
-    background: var(--surface); color: var(--text); box-shadow: 0 10px 40px rgba(0,0,0,.35);
-  }
-  dialog::backdrop { background: rgba(0,0,0,.45); }
-  .dlg-head { display: flex; align-items: center; padding: 14px 16px 4px; }
-  .dlg-head h2 { flex: 1; margin: 0; font-size: 1.15rem; }
-  .dlg-body { padding: 4px 16px 18px; }
-  .setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .setting:last-child { border-bottom: 0; }
-  .setting span small { display: block; color: var(--muted); font-size: .8rem; }
-  .key-row { padding: 0 0 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
-  .key-row label { font-weight: 600; font-size: .9rem; }
-  .key-row input { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 16px; font-family: ui-monospace, monospace; }
-  .key-row small { color: var(--muted); font-size: .8rem; }
-  .key-row a { color: var(--link); }
-  .setting > span { flex: 1 1 auto; min-width: 0; }
-  .setting select { max-width: 58%; text-overflow: ellipsis; border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; font-size: 16px; }
-  .btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
-  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  .section-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 16px 0 0; }
-  .help-list { padding-left: 0; list-style: none; margin: 8px 0; }
-  .help-list li { padding: 5px 0; }
-  code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
-
-  .toast {
-    position: fixed; left: 50%; top: calc(68px + env(safe-area-inset-top)); transform: translateX(-50%);
-    display: flex; align-items: center; gap: 12px;
-    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: .9rem;
-    z-index: 50; box-shadow: var(--shadow); max-width: calc(100vw - 32px);
-  }
-  .toast button { border: 0; background: transparent; color: inherit; font-weight: 700; text-decoration: underline; padding: 4px; flex: none; }
-</style>
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Apply the saved look before first paint so the page doesn't flash the wrong style.
+  try {
+    var s = JSON.parse(localStorage.getItem('bibleNotes.settings.v1')) || {};
+    var r = document.documentElement;
+    r.setAttribute('data-look', s.look === 'journal' ? 'journal' : 'leather');
+    if (s.theme === 'light' || s.theme === 'dark') r.setAttribute('data-theme', s.theme);
+    r.setAttribute('data-size', s.size || 'medium');
+  } catch (e) { document.documentElement.setAttribute('data-look', 'leather'); }
+</script>
 </head>
 <body>
 
+<!-- Icon set (line icons, drawn with currentColor) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z"/><path d="M12 6v14"/></symbol>
+  <symbol id="i-church" viewBox="0 0 24 24"><path d="M12 2v4M10 4h4"/><path d="M6 21V11l6-5 6 5v10"/><path d="M10 21v-5h4v5"/></symbol>
+  <symbol id="i-notebook" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12 8h4M12 12h4"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-heading" viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M6 12h12"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-question" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><path d="M12 17.5v.01"/></symbol>
+  <symbol id="i-apply" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M12 3v18M7 8h10"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
+</svg>
+
 <!-- ============ LIST VIEW ============ -->
 <section id="listView">
-  <header class="topbar">
-    <h1>📖 Bible Notes</h1>
-    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
+  <header class="list-head">
+    <div class="row">
+      <div class="brand">
+        <span class="eyebrow only-leather">Sermons &amp; Study</span>
+        <span class="eyebrow only-journal" id="todayLine"></span>
+        <h1>Bible Notes</h1>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings"><svg class="ic"><use href="#i-sliders"/></svg></button>
+    </div>
+    <label class="search-wrap">
+      <svg class="ic"><use href="#i-search"/></svg>
+      <span class="sr-only">Search notes</span>
+      <input id="search" type="search" placeholder="Search notes, verses, speakers…" autocomplete="off">
+    </label>
+    <span class="ribbon only-leather" aria-hidden="true"></span>
   </header>
   <main>
-    <input id="search" class="search" type="search" placeholder="Search notes, verses, speakers, tags…" autocomplete="off">
-    <div class="chips" id="chips"></div>
+    <div class="chips" id="chips" role="group" aria-label="Filter notes"></div>
     <div id="noteList"></div>
   </main>
   <div class="fab-wrap">
     <div class="fab-menu" id="fabMenu" hidden>
-      <button data-new="sermon">⛪ Sermon notes<small>Speaker, passage, main points</small></button>
-      <button data-new="soap">📝 SOAP study<small>Scripture · Observation · Application · Prayer</small></button>
-      <button data-new="study">📖 Blank study<small>Free-form Bible study</small></button>
+      <button data-new="sermon"><svg class="ic"><use href="#i-church"/></svg><strong>Sermon notes</strong><small>Speaker, passage, main points</small></button>
+      <button data-new="soap"><svg class="ic"><use href="#i-notebook"/></svg><strong>SOAP study</strong><small>Scripture · Observation · Application · Prayer</small></button>
+      <button data-new="study"><svg class="ic"><use href="#i-book"/></svg><strong>Blank study</strong><small>Free-form Bible study</small></button>
     </div>
-    <button class="fab" id="fab" aria-expanded="false"><span style="font-size:1.4rem;line-height:1">+</span> New note</button>
+    <button class="fab" id="fab" aria-expanded="false">
+      <svg class="ic only-leather"><use href="#i-plus"/></svg><span class="only-leather">New note</span>
+      <svg class="ic only-journal"><use href="#i-pen"/></svg><span class="only-journal">New entry</span>
+    </button>
   </div>
 </section>
 
-<!-- ============ EDITOR VIEW ============ -->
+<!-- ============ NOTE VIEW (read & edit) ============ -->
 <section id="editorView" hidden>
   <header class="topbar">
-    <button class="icon-btn" id="backBtn" aria-label="Back to notes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    </button>
-    <h1 id="editorHeading">Note</h1>
-    <span class="save-state" id="saveState"></span>
-    <button class="icon-btn" id="shareBtn" aria-label="Share note">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>
-    </button>
+    <button class="icon-btn" id="backBtn" aria-label="Back to notes"><svg class="ic"><use href="#i-back"/></svg></button>
+    <div class="title">
+      <h1 id="editorHeading">Sermon</h1>
+      <span class="save-state" id="saveState"></span>
+    </div>
+    <button class="mode-btn" id="modeBtn"></button>
+    <button class="icon-btn" id="shareBtn" aria-label="Share note"><svg class="ic"><use href="#i-share"/></svg></button>
   </header>
   <main>
-    <div class="type-toggle" role="group" aria-label="Note type">
-      <button data-type="sermon" aria-pressed="false">⛪ Sermon</button>
-      <button data-type="study" aria-pressed="false">📖 Study</button>
-    </div>
-
-    <input id="fTitle" class="title-input" placeholder="Title" autocomplete="off" enterkeyhint="next">
-
-    <div class="meta">
-      <label class="full">Scripture passage(s)
-        <input id="fPassages" placeholder="e.g. John 3:16-21; Romans 8:28" autocomplete="off">
-      </label>
-      <label>Date <input id="fDate" type="date"></label>
-      <label class="sermon-only">Speaker <input id="fSpeaker" placeholder="Pastor…" autocomplete="off"></label>
-      <label class="study-only">Tags <input id="fTagsStudy" placeholder="faith, prayer" autocomplete="off"></label>
-    </div>
-    <details class="more sermon-only" id="moreDetails">
-      <summary>More details (church, series, tags)</summary>
-      <div class="meta">
-        <label>Church / event <input id="fLocation" autocomplete="off"></label>
-        <label>Series <input id="fSeries" autocomplete="off"></label>
-        <label class="full">Tags <input id="fTags" placeholder="faith, prayer, hope" autocomplete="off"></label>
+    <div class="note-form" id="noteForm">
+      <div class="type-toggle" role="group" aria-label="Note type">
+        <button data-type="sermon" aria-pressed="false">Sermon</button>
+        <button data-type="study" aria-pressed="false">Study</button>
       </div>
-    </details>
 
-    <div class="toolbar" id="toolbar">
-      <button class="mode" id="modeBtn">👁 Preview</button>
-      <span class="sep"></span>
-      <button data-insert="# ">H Heading</button>
-      <button data-insert="- ">• Point</button>
-      <button data-insert="⭐ ">⭐ Key</button>
-      <button data-insert="📖 ">📖 Verse</button>
-      <button data-insert="❓ ">❓ Question</button>
-      <button data-insert="➡️ ">➡️ Apply</button>
-      <button data-insert="🙏 ">🙏 Prayer</button>
+      <input id="fTitle" class="title-input" placeholder="Title" aria-label="Title" autocomplete="off" enterkeyhint="next">
+
+      <div class="meta">
+        <label class="full">Scripture
+          <input id="fPassages" placeholder="e.g. John 3:16-21; Romans 8:28" autocomplete="off">
+        </label>
+        <label>Date <input id="fDate" type="date"></label>
+        <label class="sermon-only">Speaker <input id="fSpeaker" placeholder="Pastor…" autocomplete="off"></label>
+        <label class="study-only">Tags <input id="fTagsStudy" placeholder="faith, prayer" autocomplete="off"></label>
+      </div>
+      <details class="more sermon-only" id="moreDetails">
+        <summary>More details (church, series, tags)</summary>
+        <div class="meta">
+          <label>Church / event <input id="fLocation" autocomplete="off"></label>
+          <label>Series <input id="fSeries" autocomplete="off"></label>
+          <label class="full">Tags <input id="fTags" placeholder="faith, prayer, hope" autocomplete="off"></label>
+        </div>
+      </details>
     </div>
 
-    <textarea id="fBody" class="body-input" placeholder="Start typing your notes…&#10;&#10;Tip: use the buttons above to mark key points, verses, questions, applications and prayers." spellcheck="true"></textarea>
+    <div class="toolbar" id="toolbar" role="toolbar" aria-label="Insert">
+      <button data-insert="# "><svg class="ic"><use href="#i-heading"/></svg><span class="tb-label">Head</span></button>
+      <button data-insert="- "><svg class="ic"><use href="#i-list"/></svg><span class="tb-label">Point</span></button>
+      <button data-insert="★ "><svg class="ic"><use href="#i-star"/></svg><span class="tb-label">Key</span></button>
+      <button data-insert="verse"><svg class="ic"><use href="#i-book"/></svg><span class="tb-label">Verse</span></button>
+      <button data-insert="? "><svg class="ic"><use href="#i-question"/></svg><span class="tb-label">Ask</span></button>
+      <button data-insert="→ "><svg class="ic"><use href="#i-apply"/></svg><span class="tb-label">Apply</span></button>
+      <button data-insert="✝ "><svg class="ic"><use href="#i-cross"/></svg><span class="tb-label">Pray</span></button>
+    </div>
+
+    <label class="sr-only" for="fBody">Notes</label>
+    <textarea id="fBody" class="body-input" placeholder="Start typing your notes…&#10;&#10;Type a verse like John 3:16 and press Enter to add its text. Use the buttons above to mark key points, questions, applications and prayers." spellcheck="true"></textarea>
+
+    <div id="noteHead" class="note-head" hidden></div>
     <div id="preview" class="preview" hidden></div>
 
     <div class="editor-footer">
@@ -323,12 +148,37 @@
 </section>
 
 <!-- ============ SETTINGS ============ -->
-<dialog id="settingsDlg">
+<dialog id="settingsDlg" aria-labelledby="settingsTitle">
   <div class="dlg-head">
-    <h2>Settings</h2>
-    <button class="icon-btn" id="closeSettings" aria-label="Close">✕</button>
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="icon-btn" id="closeSettings" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
   </div>
   <div class="dlg-body">
+    <p class="section-title label-caps" style="margin-top:4px">Style</p>
+    <div class="style-pick" role="radiogroup" aria-label="Style">
+      <button role="radio" data-look="leather" aria-checked="true">
+        <span class="swatch sw-leather" aria-hidden="true"><i>John 3:16</i><b>Bible Notes</b></span>
+        <span class="name">Leather<small>Classic Bible</small></span>
+      </button>
+      <button role="radio" data-look="journal" aria-checked="false">
+        <span class="swatch sw-journal" aria-hidden="true"><i>Sunday, Sept 20</i><b>Bible Notes</b></span>
+        <span class="name">Journal<small>Warm notebook</small></span>
+      </button>
+    </div>
+    <div class="setting">
+      <span>Light or dark</span>
+      <select id="sTheme">
+        <option value="system">Match phone</option><option value="light">Light</option><option value="dark">Dark</option>
+      </select>
+    </div>
+    <div class="setting">
+      <span>Text size</span>
+      <select id="sSize">
+        <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
+      </select>
+    </div>
+
+    <p class="section-title label-caps">Verses</p>
     <div class="setting">
       <span>Verse text<small>Translation added to your notes</small></span>
       <select id="sVerseText">
@@ -362,42 +212,30 @@
       </select>
     </div>
     <div class="setting">
-      <span>Open verse links in<small>Online, when you tap a reference in Preview</small></span>
+      <span>Open verse links in<small>Online, when you tap a reference</small></span>
       <select id="sTranslation">
         <option>ESV</option><option>NIV</option><option>KJV</option><option>NKJV</option>
         <option>NLT</option><option>CSB</option><option>NASB</option><option>AMP</option><option>MSG</option>
       </select>
     </div>
-    <div class="setting">
-      <span>Theme</span>
-      <select id="sTheme">
-        <option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option>
-      </select>
-    </div>
-    <div class="setting">
-      <span>Text size</span>
-      <select id="sSize">
-        <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
-      </select>
-    </div>
 
-    <p class="section-title">Backup</p>
-    <p style="margin:6px 0;font-size:.9rem;color:var(--muted)">Notes are saved only on this device. Export a backup now and then so you never lose them.</p>
+    <p class="section-title label-caps">Backup</p>
+    <p style="margin:6px 0;font-size:.9em;color:var(--muted)">Notes are saved only on this device. Export a backup now and then so you never lose them.</p>
     <div class="btn-row">
-      <button class="btn" id="exportJson">⬇ Export backup</button>
-      <button class="btn" id="importBtn">⬆ Import backup</button>
-      <button class="btn" id="exportTxt">📄 Export as text</button>
+      <button class="btn" id="exportJson"><svg class="ic"><use href="#i-download"/></svg>Export backup</button>
+      <button class="btn" id="importBtn"><svg class="ic"><use href="#i-upload"/></svg>Import backup</button>
+      <button class="btn" id="exportTxt"><svg class="ic"><use href="#i-file"/></svg>Export as text</button>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
     </div>
 
-    <p class="section-title">Formatting tips</p>
+    <p class="section-title label-caps">Writing tips</p>
     <ul class="help-list">
-      <li><code># </code> Heading &nbsp; <code>- </code> Bullet point &nbsp; <code>&gt; </code> Quote</li>
-      <li><code>**bold**</code> &nbsp; <code>*italic*</code></li>
-      <li>Type a reference like <code>John 3:16</code> or <code>Rom 8:28-30</code> and press <strong>Enter</strong>. The verse text is added for you. Or put the cursor on the line and tap <strong>📖 Verse</strong>.</li>
-      <li>Verse references like <span class="ref">John 3:16</span> or <span class="ref">1 Cor 13:4-7</span> become tappable links in Preview.</li>
+      <li>Type a reference like <code>John 3:16</code> or <code>Rom 8:28-30</code> and press <strong>Enter</strong>. The verse text is added for you.</li>
+      <li><code># </code> heading · <code>- </code> point · <code>★ </code> key point · <code>&gt; </code> quote</li>
+      <li><code>? </code> question · <code>→ </code> application (a checkbox) · <code>✝ </code> prayer</li>
+      <li><code>**bold**</code> · <code>*italic*</code></li>
     </ul>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:0" id="countLine"></p>
+    <p style="font-size:.8em;color:var(--muted);margin-bottom:0" id="countLine"></p>
   </div>
 </dialog>
 
@@ -421,12 +259,12 @@ function persistNotes() {
     localStorage.setItem(STORE_KEY, JSON.stringify(notes));
     return true;
   } catch (e) {
-    toast('⚠️ Could not save — storage may be full. Export a backup!');
+    toast('Could not save. Storage may be full; export a backup.');
     return false;
   }
 }
 function loadSettings() {
-  const defaults = { translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {}, yvVersions: [] };
+  const defaults = { look: 'leather', translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {}, yvVersions: [] };
   try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY))); }
   catch { return defaults; }
 }
@@ -831,14 +669,25 @@ async function getPassage(r) {
 }
 
 function verseLine(r, passage) {
-  if (!passage.text) return `📖 ${refLabel(r)} (not included in the ${passage.code})`;
+  if (!passage.text) return `${refLabel(r)} (not included in the ${passage.code})`;
   // Some translations open the verse with their own quotation mark (e.g. ESV John 3:16).
   const text = passage.text.replace(/^[“"]\s*/, '');
-  return `📖 ${refLabel(r)} “${text}${passage.truncated ? ' …' : ''}” (${passage.code})`;
+  return `${refLabel(r)} “${text}${passage.truncated ? ' …' : ''}” (${passage.code})`;
 }
 
-/** A line that already holds inserted verse text, e.g. `📖 John 3:16 “For God…” (BSB)`. */
-const isVerseLine = line => /^\s*📖[^“]*“/.test(line) || /^\s*📖.*\(not included in the /.test(line);
+// An inserted verse line: `John 3:16 “For God…” (BSB)`. Notes from older versions start with 📖.
+const VERSE_LINE_RE = /^\s*(?:📖\uFE0F?\s*)?([^“"]{3,40}?)\s+“(.*)”\s*\(([^()]{1,30})\)\s*$/;
+const OMITTED_LINE_RE = /^\s*(?:📖\uFE0F?\s*)?([^“"(]{3,40}?)\s+\(not included in the ([^()]{1,30})\)\s*$/;
+
+/** { ref, text, code } if the line holds inserted verse text, else null. */
+function parseVerseLine(line) {
+  let m = line.match(VERSE_LINE_RE);
+  if (m && findVerseRefs(m[1]).length) return { ref: m[1].trim(), text: m[2], code: m[3] };
+  m = line.match(OMITTED_LINE_RE);
+  if (m && findVerseRefs(m[1]).length) return { ref: m[1].trim(), text: '', code: m[2] };
+  return null;
+}
+const isVerseLine = line => !!parseVerseLine(line) || /^\s*📖[^“]*“/.test(line);
 
 /** Find `line` as a whole line in `text`, nearest to where it was. Returns -1 if it's gone. */
 function relocateLine(text, lineStart, line) {
@@ -866,14 +715,14 @@ async function insertVersesForLine(lineStart, line, { manual = false } = {}) {
   const refs = findVerseRefs(line);
   if (!refs.length) return false;
 
-  // "📖 John 10:11 I am the good shepherd." means the text was typed by hand.
-  const bare = line.replace(/^\s*📖️?\s*/, '').replace(/[\s.,;:!?]+$/, '');
+  // "> John 10:11 I am the good shepherd." means the text was typed by hand.
+  const bare = line.replace(/^\s*(?:📖\uFE0F?|>)\s*/, '').replace(/[\s.,;:!?]+$/, '');
   const refOnly = refs.length === 1 && bare.toLowerCase() === refs[0].text.toLowerCase();
-  if (!refOnly && /^\s*📖/.test(line)) return false;
+  if (!refOnly && /^\s*(?:📖|>)/.test(line)) return false;
 
   let passages;
   try { passages = await Promise.all(refs.map(getPassage)); }
-  catch { if (manual) toast('⚠️ Couldn’t load Bible text'); return false; }
+  catch { if (manual) toast('Couldn’t load Bible text'); return false; }
 
   // The user may have kept typing while the text loaded; find the line again.
   if (!current || current.id !== noteId) return false;
@@ -936,14 +785,22 @@ async function insertVersesForLine(lineStart, line, { manual = false } = {}) {
 /* =========================================================
    Lightweight note formatting (for Preview)
    ========================================================= */
-const CALLOUTS = [
-  { mark: '⭐', cls: 'key' },
-  { mark: '📖', cls: 'verse' },
-  { mark: '❓', cls: 'question' },
-  { mark: '➡️', cls: 'apply' },
-  { mark: '➡', cls: 'apply' },
-  { mark: '🙏', cls: 'prayer' },
+// Line markers. The emoji forms come from notes written with earlier versions of the app.
+const MARKS = [
+  { re: /^(?:★|⭐\uFE0F?)\s*/, kind: 'key' },
+  { re: /^(?:❓\uFE0F?\s*|\?\s+)/, kind: 'question' },
+  { re: /^(?:→|➡\uFE0F?)\s*/, kind: 'apply' },
+  { re: /^(?:✓|✅)\s*/, kind: 'done' },
+  { re: /^(?:✝\uFE0F?|🙏[\u{1F3FB}-\u{1F3FF}]?)\s*/u, kind: 'prayer' },
+  { re: /^📖\uFE0F?\s*/, kind: 'verse' },
 ];
+const icon = name => `<svg class="ic" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+/** Turn superscript verse numbers (¹⁶, ²ː¹) into styled <sup> elements. */
+function verseNumbersToHtml(html) {
+  return html.replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+(?:ː[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?)\s?/g, (m, g) =>
+    `<sup class="vn">${[...g].map(ch => (ch === 'ː' ? ':' : SUPERSCRIPT.indexOf(ch))).join('')}</sup>`);
+}
 
 function inline(text) {
   let s = linkifyRefs(escapeHtml(text));
@@ -956,29 +813,62 @@ function inline(text) {
 function renderBody(text) {
   const out = [];
   let inList = false;
-  for (const raw of (text || '').split('\n')) {
+  (text || '').split('\n').forEach((raw, i) => {
     const line = raw.replace(/\s+$/, '');
     const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
     if (bullet) {
       if (!inList) { out.push('<ul>'); inList = true; }
       out.push(`<li>${inline(bullet[1])}</li>`);
-      continue;
+      return;
     }
     if (inList) { out.push('</ul>'); inList = false; }
-    if (!line.trim()) { out.push('<div class="gap"></div>'); continue; }
+    if (!line.trim()) { out.push('<div class="gap"></div>'); return; }
 
     let m;
-    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push(`<h3>${inline(m[1])}</h3>`); continue; }
-    if ((m = line.match(/^>\s?(.*)$/))) { out.push(`<blockquote>${inline(m[1])}</blockquote>`); continue; }
-    const trimmed = line.trimStart();
-    const c = CALLOUTS.find(c => trimmed.startsWith(c.mark));
-    if (c) {
-      const rest = trimmed.slice(c.mark.length).replace(/^️/, '').trim();
-      out.push(`<p class="callout ${c.cls}"><span class="mark">${c.mark === '➡' ? '➡️' : c.mark}</span>${inline(rest)}</p>`);
-      continue;
+    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push(`<h3>${inline(m[1])}</h3>`); return; }
+
+    const verse = parseVerseLine(line);
+    if (verse) {
+      const body = verse.text
+        ? verseNumbersToHtml(inline(verse.text))
+        : `<em>Not included in the ${escapeHtml(verse.code)}</em>`;
+      out.push(`<figure class="c-verse"><blockquote>${body}</blockquote>` +
+        `<figcaption>${linkifyRefs(escapeHtml(verse.ref))} · ${escapeHtml(verse.code)}</figcaption></figure>`);
+      return;
     }
-    out.push(`<p>${inline(line)}</p>`);
-  }
+    if ((m = line.match(/^>\s?(.*)$/))) {
+      if (m[1].trim()) out.push(`<figure class="c-verse plain"><blockquote>${verseNumbersToHtml(inline(m[1]))}</blockquote></figure>`);
+      return;
+    }
+
+    const t = line.trimStart();
+    const mark = MARKS.find(mk => mk.re.test(t));
+    if (!mark) { out.push(`<p>${inline(line)}</p>`); return; }
+    const rest = t.replace(mark.re, '').trim();
+    if (!rest) return; // an empty marker, e.g. from a template
+    const html = inline(rest);
+    switch (mark.kind) {
+      case 'key':
+        out.push(`<p class="c-key">${icon('star')}<span>${html}</span></p>`);
+        break;
+      case 'question':
+        out.push(`<p class="c-question">${icon('question')}<span><span class="c-label">Question</span><span class="c-text">${html}</span></span></p>`);
+        break;
+      case 'apply':
+      case 'done': {
+        const done = mark.kind === 'done';
+        out.push(`<label class="c-apply${done ? ' done' : ''}"><input type="checkbox" data-line="${i}"${done ? ' checked' : ''}>` +
+          `<span><span class="c-label">Apply</span><span class="c-text">${html}</span></span></label>`);
+        break;
+      }
+      case 'prayer':
+        out.push(`<div class="c-prayer"><span class="c-label">Prayer</span><span class="c-text">${html}</span></div>`);
+        break;
+      case 'verse':
+        out.push(`<figure class="c-verse plain"><blockquote>${verseNumbersToHtml(html)}</blockquote></figure>`);
+        break;
+    }
+  });
   if (inList) out.push('</ul>');
   return out.join('');
 }
@@ -989,8 +879,9 @@ function renderBody(text) {
 const TEMPLATES = {
   sermon: '',
   study: '',
-  soap: '# Scripture\n📖 \n\n# Observation\n- \n\n# Application\n➡️ \n\n# Prayer\n🙏 ',
+  soap: '# Scripture\n> \n\n# Observation\n- \n\n# Application\n→ \n\n# Prayer\n✝ ',
 };
+const OLD_SOAP_TEMPLATE = '# Scripture\n📖 \n\n# Observation\n- \n\n# Application\n➡️ \n\n# Prayer\n🙏 ';
 
 function createNote(kind) {
   const note = {
@@ -1021,7 +912,7 @@ function getNote(id) { return notes.find(n => n.id === id); }
 
 function isBlank(n) {
   return !n.title.trim() && !n.passages.trim() && !n.speaker.trim() &&
-    (!n.body.trim() || n.body === TEMPLATES.soap);
+    (!n.body.trim() || n.body === TEMPLATES.soap || n.body === OLD_SOAP_TEMPLATE);
 }
 
 function deleteNote(id) {
@@ -1032,11 +923,11 @@ function deleteNote(id) {
 function displayTitle(n) {
   if (n.title.trim()) return n.title.trim();
   if (n.passages.trim()) return n.passages.trim();
-  const firstLine = n.body.split('\n').map(l => l.replace(/^[#>\-*•\s]+/, '').trim()).find(Boolean);
+  const firstLine = n.body.split('\n').map(l => l.replace(/^#+\s*/, '').replace(MARKER_RE, '').trim()).find(Boolean);
   return firstLine || (n.type === 'sermon' ? 'Untitled sermon' : 'Untitled study');
 }
 
-const MARKER_RE = /^(?:⭐|📖|❓|➡️?|🙏|\uFE0F|[>\-*•\s])+/u;
+const MARKER_RE = /^(?:★|⭐|📖|❓|\?(?=\s)|→|➡|✓|✅|✝|🙏|\uFE0F|[>\-*•\s])+/u;
 function snippetOf(body) {
   return body.split('\n')
     .filter(l => !/^\s*#/.test(l))
@@ -1067,13 +958,13 @@ function renderChips() {
   const allTags = [...new Set(notes.flatMap(n => n.tags))].sort((a, b) => a.localeCompare(b));
   const chips = [
     { label: 'All', type: 'all' },
-    { label: '⛪ Sermons', type: 'sermon' },
-    { label: '📖 Studies', type: 'study' },
+    { label: 'Sermons', type: 'sermon' },
+    { label: 'Studies', type: 'study' },
     ...allTags.map(t => ({ label: '#' + t, tag: t })),
   ];
   $('#chips').innerHTML = chips.map((c, i) => {
     const pressed = c.tag ? filter.tag === c.tag : (filter.type === c.type && !filter.tag);
-    return `<button class="chip" data-i="${i}" aria-pressed="${pressed}">${escapeHtml(c.label)}</button>`;
+    return `<button class="chip${c.tag ? ' tag-chip' : ''}" data-kind="${c.type || 'tag'}" data-i="${i}" aria-pressed="${pressed}">${escapeHtml(c.label)}</button>`;
   }).join('');
   $$('#chips .chip').forEach(btn => btn.addEventListener('click', () => {
     const c = chips[+btn.dataset.i];
@@ -1101,9 +992,10 @@ function renderList() {
 
   if (!list.length) {
     el.innerHTML = notes.length
-      ? `<div class="empty"><div class="big">🔍</div><p>No notes match your search.</p></div>`
-      : `<div class="empty"><div class="big">📖</div><p><strong>No notes yet.</strong></p>
-         <p>Tap <strong>+ New note</strong> to take notes on Sunday’s sermon or start a Bible study.</p></div>`;
+      ? `<div class="empty">${icon('search')}<h2>Nothing found</h2><p>No notes match your search.</p></div>`
+      : `<div class="empty">${icon('book')}<h2>No notes yet</h2>
+         <p>Tap <strong><span class="only-leather">New note</span><span class="only-journal">New entry</span></strong>
+         to take notes on Sunday’s sermon or start a Bible study.</p></div>`;
     return;
   }
 
@@ -1111,15 +1003,24 @@ function renderList() {
   let lastMonth = '';
   for (const n of list) {
     const month = n.date ? formatDate(n.date, { month: 'long', year: 'numeric' }) : 'No date';
-    if (month !== lastMonth) { html += `<div class="month">${escapeHtml(month)}</div>`; lastMonth = month; }
+    if (month !== lastMonth) { html += `<div class="month"><span>${escapeHtml(month)}</span></div>`; lastMonth = month; }
+    const isSermon = n.type === 'sermon';
     const snippet = snippetOf(n.body);
-    const sub = [formatDate(n.date, { month: 'short', day: 'numeric' }), n.speaker].filter(Boolean).join(' · ');
+    const passages = n.passages.trim();
+    const speaker = isSermon ? n.speaker.trim() : '';
+    const kind = isSermon ? ['Sermon', speaker].filter(Boolean).join(' · ')
+      : (/^# Scripture\n/.test(n.body) ? 'Study · SOAP' : 'Study');
+    const date = n.date ? formatDate(n.date, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
     html += `<button class="card" data-id="${n.id}">
-      <div class="card-top"><span class="badge ${n.type}">${n.type}</span><span>${escapeHtml(sub)}</span></div>
+      <div class="card-top">
+        <span class="card-ref only-leather">${icon(isSermon ? 'church' : 'book')}${escapeHtml(passages || (isSermon ? 'Sermon' : 'Study'))}</span>
+        <span class="card-kind only-journal ${n.type}">${escapeHtml(kind)}</span>
+        <span class="card-date">${escapeHtml(date)}</span>
+      </div>
       <h2>${escapeHtml(displayTitle(n))}</h2>
-      ${n.passages && n.title ? `<div class="passages">${escapeHtml(n.passages)}</div>` : ''}
-      ${snippet ? `<div class="snippet">${escapeHtml(snippet.slice(0, 220))}</div>` : ''}
-      ${n.tags.length ? `<div class="tags">${n.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      ${passages && n.title.trim() ? `<div class="ref-line only-journal">${escapeHtml(passages)}</div>` : ''}
+      ${snippet ? `<div class="snippet">${speaker ? `<span class="only-leather">${escapeHtml(speaker)} — </span>` : ''}${escapeHtml(snippet.slice(0, 220))}</div>` : ''}
+      ${n.tags.length ? `<div class="tags">${n.tags.map(t => `<span class="tag"><span class="only-journal">#</span>${escapeHtml(t)}</span>`).join('')}</div>` : ''}
     </button>`;
   }
   el.innerHTML = html;
@@ -1167,7 +1068,8 @@ function openEditor(id, isNew) {
   F.body.value = n.body;
   $('#moreDetails').open = false;
   setType(n.type, false);
-  setPreview(false);
+  // Existing notes open ready to read; new ones open ready to type.
+  setPreview(!isNew && !isBlank(n));
   $('#saveState').textContent = '';
   updateStamp();
   $('#listView').hidden = true;
@@ -1182,7 +1084,7 @@ function setType(type, save = true) {
   $$('.type-toggle button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.type === type)));
   $$('.sermon-only').forEach(el => { el.hidden = type !== 'sermon'; });
   $$('.study-only').forEach(el => { el.hidden = type !== 'study'; });
-  $('#editorHeading').textContent = type === 'sermon' ? 'Sermon notes' : 'Bible study';
+  $('#editorHeading').textContent = type === 'sermon' ? 'Sermon' : 'Bible study';
   F.title.placeholder = type === 'sermon' ? 'Sermon title' : 'Study title (optional)';
   if (save) scheduleSave();
 }
@@ -1291,7 +1193,7 @@ $$('#toolbar [data-insert]').forEach(b => {
   // Keep the keyboard open: don't let the button steal focus from the textarea.
   b.addEventListener('mousedown', e => e.preventDefault());
   b.addEventListener('click', async () => {
-    if (b.dataset.insert === '📖 ' && !previewMode) {
+    if (b.dataset.insert === 'verse' && !previewMode) {
       const ta = F.body;
       const pos = ta.selectionStart;
       const lineStart = ta.value.lastIndexOf('\n', pos - 1) + 1;
@@ -1302,7 +1204,8 @@ $$('#toolbar [data-insert]').forEach(b => {
         if (await insertVersesForLine(lineStart, line, { manual: true })) return;
       }
     }
-    insertMarker(b.dataset.insert);
+    // No reference on the line: start a quote for Scripture typed by hand.
+    insertMarker(b.dataset.insert === 'verse' ? '> ' : b.dataset.insert);
   });
 });
 
@@ -1327,17 +1230,53 @@ F.body.addEventListener('input', e => {
 });
 
 /* ----- Edit / Preview ----- */
+function renderNoteHead() {
+  const n = current;
+  const date = n.date ? formatDate(n.date, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
+  const by = n.type === 'sermon' ? n.speaker.trim() : '';
+  const passages = n.passages.trim();
+  const extra = [n.location.trim(), n.series.trim() && `Series: ${n.series.trim()}`,
+    n.tags.length && n.tags.map(t => '#' + t).join(' ')].filter(Boolean);
+  $('#noteHead').innerHTML =
+    `<div class="nh-date">${escapeHtml(date)}${by ? `<span class="nh-by"> · ${escapeHtml(by)}</span>` : ''}</div>` +
+    `<h1>${escapeHtml(displayTitle(n))}</h1>` +
+    (passages || by ? `<div class="nh-sub">${by ? `<span class="nh-by2">${escapeHtml(by)}${passages ? ' · ' : ''}</span>` : ''}` +
+      `${passages ? `<span class="nh-ref">${linkifyRefs(escapeHtml(passages))}</span>` : ''}</div>` : '') +
+    (extra.length ? `<div class="nh-extra">${escapeHtml(extra.join(' · '))}</div>` : '') +
+    '<div class="ornament" aria-hidden="true"><span></span><i></i><span></span></div>';
+}
+
+/** Switch between reading the note and editing it. */
 function setPreview(on) {
   previewMode = on;
   if (on) {
     readForm();
+    renderNoteHead();
     $('#preview').innerHTML = renderBody(current.body) ||
-      '<p style="color:var(--muted)">Nothing here yet.</p>';
+      '<p style="color:var(--muted);font-style:italic">Nothing here yet. Tap Edit to start writing.</p>';
   }
   $('#preview').hidden = !on;
+  $('#noteHead').hidden = !on;
+  $('#noteForm').hidden = on;
+  $('#toolbar').hidden = on;
   F.body.hidden = on;
-  $('#modeBtn').textContent = on ? '✏️ Edit' : '👁 Preview';
+  $('#modeBtn').innerHTML = on ? `${icon('pen')}Edit` : `${icon('eye')}Preview`;
 }
+
+// Tick an application off in the reading view: "→ " becomes "✓ " in the note.
+$('#preview').addEventListener('change', e => {
+  const cb = e.target.closest('input[data-line]');
+  if (!cb || !current) return;
+  const lines = F.body.value.split('\n');
+  const i = +cb.dataset.line;
+  if (lines[i] == null) return;
+  const indent = lines[i].match(/^\s*/)[0];
+  const rest = lines[i].trimStart().replace(/^(?:→|➡\uFE0F?|✓|✅)\s*/, '');
+  lines[i] = indent + (cb.checked ? '✓ ' : '→ ') + rest;
+  F.body.value = lines.join('\n');
+  cb.closest('.c-apply').classList.toggle('done', cb.checked);
+  scheduleSave();
+});
 $('#modeBtn').addEventListener('mousedown', e => e.preventDefault());
 $('#modeBtn').addEventListener('click', () => setPreview(!previewMode));
 
@@ -1360,10 +1299,25 @@ window.addEventListener('hashchange', route);
    ========================================================= */
 function applySettings() {
   const root = document.documentElement;
+  const look = settings.look === 'journal' ? 'journal' : 'leather';
+  root.setAttribute('data-look', look);
   if (settings.theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', settings.theme);
   root.setAttribute('data-size', settings.size);
+  // Match the phone's status bar to the header.
+  const dark = settings.theme === 'dark' ||
+    (settings.theme === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  const bar = look === 'journal' ? (dark ? '#1f1c18' : '#f8f1e3') : (dark ? '#120b09' : '#3a1c15');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', bar);
+  $$('.style-pick [data-look]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.look === look)));
+  $('#todayLine').textContent = formatDate(todayISO(), { weekday: 'long', month: 'long', day: 'numeric' });
 }
+
+$$('.style-pick [data-look]').forEach(b => b.addEventListener('click', () => {
+  settings.look = b.dataset.look;
+  persistSettings();
+  applySettings();
+}));
 
 $('#settingsBtn').addEventListener('click', () => {
   $('#sTranslation').value = settings.translation;
@@ -1489,7 +1443,7 @@ $('#importFile').addEventListener('change', async e => {
     renderList();
     toast(`Imported: ${added} new, ${updated} updated`);
   } catch {
-    toast('⚠️ That file isn’t a Bible Notes backup');
+    toast('That file isn’t a Bible Notes backup');
   }
 });
 

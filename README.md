@@ -5,6 +5,17 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
 
 ## Features
 
+- **Two styles, switchable in Settings → Style:**
+  - **Leather:** a classic Bible look, with an oxblood-and-gold header, parchment pages, Garamond type,
+    and references in red small caps.
+  - **Journal:** a warm notebook look, with dotted and ruled paper, handwritten dates and questions,
+    highlighted key points, checkable applications, and prayers on a sticky note.
+
+  Each style has a light and a dark mode (Settings → Light or dark). The fonts are bundled, so everything
+  works offline.
+- **Reading view:** notes open ready to read. Tap **Edit** to change them. In the reading view you can
+  tick off applications as you do them.
+
 - **Sermon notes**: title, speaker, date, scripture passages, church/event, series and tags.
 - **Bible study notes**: blank or a **SOAP** template (Scripture · Observation · Application · Prayer).
 - **Built-in Bible text (works offline).** Type a reference like `John 3:16`, `rom 8:28` or `1 Cor 13:4-7`
@@ -35,7 +46,7 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
 
     To add another service, add an entry to `TRANSLATIONS` in `index.html` with a
     `fetch(reference, key, ref)` function.
-- **Quick-mark buttons** for headings, bullet points, ⭐ key points, 📖 verses, ❓ questions, ➡️ applications and 🙏 prayers.
+- **Quick-mark buttons** for headings, points, key points, verses, questions, applications and prayers.
   Bullet lists continue automatically when you press Enter.
 - **Preview mode** shows color-coded notes. Verse references such as `John 3:16` or `1 Cor 13:4-7` become links
   to Bible Gateway in your chosen translation (ESV, NIV, KJV, NKJV, NLT, CSB, NASB, AMP, MSG).
@@ -76,23 +87,26 @@ Use **Settings → Export backup** regularly, and keep the file somewhere safe (
 
 ## Formatting cheat-sheet
 
-| Type this            | You get                         |
-|----------------------|---------------------------------|
-| `# Main point`       | Heading                         |
-| `- text`             | Bullet point                    |
-| `> text`             | Quote                           |
-| `⭐ text`            | Highlighted key point           |
-| `📖 John 10:11 …`    | Verse callout (with link)       |
-| `❓ text`            | Question to study later         |
-| `➡️ text`            | Application                     |
-| `🙏 text`            | Prayer                          |
-| `**bold**` / `*italic*` | **bold** / *italic*          |
-| `John 3:16` + Enter  | Verse text inserted automatically |
+| Type this              | You get                                  |
+|------------------------|------------------------------------------|
+| `John 3:16` + Enter    | Verse text inserted automatically        |
+| `# Main point`         | Heading                                  |
+| `- text`               | Bullet point                             |
+| `★ text`               | Key point                                |
+| `> text`               | Scripture or quote typed by hand         |
+| `? text`               | Question to study later                  |
+| `→ text`               | Application (a checkbox; ticked = `✓`)   |
+| `✝ text`               | Prayer                                   |
+| `**bold**` / `*italic*`| **bold** / *italic*                      |
+
+The toolbar buttons type these for you. Notes written with the older emoji markers (⭐ 📖 ❓ ➡️ 🙏) still display correctly.
 
 ## Project layout
 
 ```
-index.html             The whole app (markup, styles and script)
+index.html             The app (markup and script)
+styles.css             Both styles (Leather and Journal), light and dark
+fonts/                 Bundled fonts (SIL Open Font License, licenses included)
 manifest.webmanifest   App name, colors and icons for "Add to Home Screen"
 sw.js                  Service worker that caches the app for offline use
 icons/                 App icons

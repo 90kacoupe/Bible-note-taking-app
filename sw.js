@@ -1,8 +1,20 @@
 // Offline cache for the app shell. Bump VERSION whenever you change a file
 // so phones pick up the update.
-const VERSION = 'bible-notes-v4';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
-  './bible/bsb.js', './bible/kjv.js'];
+const VERSION = 'bible-notes-v5';
+const FILES = ['./', './index.html', './styles.css', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
+  './bible/bsb.js', './bible/kjv.js',
+  './fonts/caveat-latin-600-normal.woff2',
+  './fonts/cormorant-garamond-latin-600-normal.woff2',
+  './fonts/cormorant-garamond-latin-700-normal.woff2',
+  './fonts/eb-garamond-latin-400-italic.woff2',
+  './fonts/eb-garamond-latin-400-normal.woff2',
+  './fonts/eb-garamond-latin-600-normal.woff2',
+  './fonts/fraunces-latin-500-italic.woff2',
+  './fonts/fraunces-latin-600-normal.woff2',
+  './fonts/literata-latin-400-italic.woff2',
+  './fonts/literata-latin-400-normal.woff2',
+  './fonts/literata-latin-600-normal.woff2',
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
