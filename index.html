@@ -48,6 +48,9 @@
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
 </svg>
 
@@ -147,6 +150,84 @@
   </main>
 </section>
 
+<!-- ============ BIBLE VIEW ============ -->
+<section id="bibleView" hidden>
+  <header class="bible-head">
+    <button class="book-btn" id="bookBtn" aria-haspopup="dialog"><span id="bookBtnLabel">John 1</span><svg class="ic"><use href="#i-chevron-down"/></svg></button>
+    <div class="bible-head-actions">
+      <button class="icon-btn" id="goBtn" aria-label="Go to a passage"><svg class="ic"><use href="#i-search"/></svg></button>
+      <label class="trans-pill"><span id="readTransLabel">BSB</span><select id="readTrans" aria-label="Translation"></select></label>
+    </div>
+  </header>
+  <div class="bible-main">
+    <button class="ch-notes" id="chNotes" hidden></button>
+    <p class="ch-status" id="chStatus" hidden></p>
+    <article class="chapter" id="chapter"></article>
+  </div>
+</section>
+
+<nav class="tabbar" id="tabBar" aria-label="Sections">
+  <button class="tb-arrow" id="prevCh" aria-label="Previous chapter"><svg class="ic"><use href="#i-back"/></svg></button>
+  <button class="tab" data-tab="notes"><svg class="ic only-leather"><use href="#i-notebook"/></svg><svg class="ic only-journal"><use href="#i-pen"/></svg><span>Notes</span></button>
+  <button class="tab" data-tab="bible"><svg class="ic"><use href="#i-book"/></svg><span>Bible</span></button>
+  <button class="tb-arrow" id="nextCh" aria-label="Next chapter"><svg class="ic"><use href="#i-next"/></svg></button>
+</nav>
+
+<!-- Verses selected -->
+<div class="sheet" id="selSheet" role="dialog" aria-labelledby="selRef" hidden>
+  <span class="sheet-grip only-journal" aria-hidden="true"></span>
+  <div class="sheet-head">
+    <span class="sheet-title"><span class="sheet-kicker only-journal" id="selCount"></span><span class="sheet-ref" id="selRef"></span></span>
+    <button class="icon-btn" id="selClose" aria-label="Clear selection"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="hl-colors" role="group" aria-label="Highlight color">
+    <button data-hl="gold" aria-label="Gold highlight"></button>
+    <button data-hl="rose" aria-label="Rose highlight"></button>
+    <button data-hl="sage" aria-label="Green highlight"></button>
+    <button data-hl="blue" aria-label="Blue highlight"></button>
+    <button data-hl="lavender" aria-label="Lavender highlight"></button>
+    <button data-hl="" aria-label="Remove highlight"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-actions">
+    <button class="btn" id="selCopy"><svg class="ic"><use href="#i-copy"/></svg>Copy</button>
+    <button class="btn" id="selShare"><svg class="ic"><use href="#i-share"/></svg>Share</button>
+    <button class="btn primary" id="selNote"><svg class="ic"><use href="#i-pen"/></svg>Add note</button>
+  </div>
+</div>
+
+<!-- Notes on a verse or chapter -->
+<div class="sheet-backdrop" id="verseBackdrop" hidden></div>
+<div class="sheet tall" id="verseSheet" role="dialog" aria-labelledby="vsRef" hidden>
+  <span class="sheet-grip only-journal" aria-hidden="true"></span>
+  <div class="sheet-head">
+    <span class="sheet-ref" id="vsRef"></span>
+    <button class="icon-btn" id="vsClose" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <figure class="c-verse" id="vsVerse"></figure>
+  <div class="vs-title"><span>In your notes</span></div>
+  <div id="vsNotes"></div>
+  <button class="btn primary big" id="vsNew"></button>
+  <a class="vs-link" id="vsGateway" target="_blank" rel="noopener"></a>
+</div>
+
+<!-- Book & chapter picker -->
+<dialog id="bookDlg" aria-labelledby="bookDlgTitle">
+  <div class="dlg-head">
+    <button class="icon-btn" id="bookBack" aria-label="Back to books" hidden><svg class="ic"><use href="#i-back"/></svg></button>
+    <h2 id="bookDlgTitle">Books</h2>
+    <button class="icon-btn" id="bookClose" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <form class="go-form" id="goForm">
+      <label class="sr-only" for="goInput">Go to a passage</label>
+      <input id="goInput" placeholder="Go to… e.g. Romans 8:28" autocomplete="off" enterkeyhint="go">
+      <button class="btn" type="submit">Go</button>
+    </form>
+    <div id="bookList"></div>
+    <div class="chapter-grid" id="chapterGrid" hidden></div>
+  </div>
+</dialog>
+
 <!-- ============ SETTINGS ============ -->
 <dialog id="settingsDlg" aria-labelledby="settingsTitle">
   <div class="dlg-head">
@@ -212,7 +293,7 @@
       </select>
     </div>
     <div class="setting">
-      <span>Open verse links in<small>Online, when you tap a reference</small></span>
+      <span>Bible Gateway links<small>“Read on Bible Gateway” in the Bible tab</small></span>
       <select id="sTranslation">
         <option>ESV</option><option>NIV</option><option>KJV</option><option>NKJV</option>
         <option>NLT</option><option>CSB</option><option>NASB</option><option>AMP</option><option>MSG</option>
@@ -371,12 +452,12 @@ function refUrl(ref) {
     '&version=' + encodeURIComponent(settings.translation);
 }
 
-/** Wrap Bible references in already-HTML-escaped text with links. */
+/** Wrap Bible references in already-HTML-escaped text with links that open the reader. */
 function linkifyRefs(escaped) {
-  return escaped.replace(REF_RE, (m, pre, ref, book) => {
-    const canon = BOOK_LOOKUP.get(book.replace(/\s+/g, '').toLowerCase()) || book;
-    const normalized = ref.replace(new RegExp('^' + book.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.?\\s?'), canon + ' ');
-    return `${pre}<a href="${refUrl(normalized)}" target="_blank" rel="noopener">${ref}</a>`;
+  return escaped.replace(REF_RE, (m, pre, ref, book, ch, v) => {
+    const canon = BOOK_LOOKUP.get(book.replace(/\s+/g, '').toLowerCase());
+    if (!canon) return m;
+    return `${pre}<a href="#/bible/${USFM_BOOKS[BOOK_INDEX.get(canon)]}/${ch}${v ? '/' + v : ''}">${ref}</a>`;
   });
 }
 
@@ -1043,6 +1124,28 @@ function matches(n) {
   return true;
 }
 
+/** One note as a card (notes list and "In your notes" panels). `relation` replaces the snippet. */
+function noteCardHtml(n, relation) {
+  const isSermon = n.type === 'sermon';
+  const snippet = snippetOf(n.body);
+  const passages = n.passages.trim();
+  const speaker = isSermon ? n.speaker.trim() : '';
+  const kind = isSermon ? ['Sermon', speaker].filter(Boolean).join(' · ')
+      : (/^# Scripture\n/.test(n.body) ? 'Study · SOAP' : 'Study');
+  const date = n.date ? formatDate(n.date, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  return `<button class="card" data-id="${n.id}">
+      <div class="card-top">
+        <span class="card-ref only-leather">${icon(isSermon ? 'church' : 'book')}${escapeHtml(passages || (isSermon ? 'Sermon' : 'Study'))}</span>
+        <span class="card-kind only-journal ${n.type}">${escapeHtml(kind)}</span>
+        <span class="card-date">${escapeHtml(date)}</span>
+      </div>
+      <h2>${escapeHtml(displayTitle(n))}</h2>
+      ${passages && n.title.trim() ? `<div class="ref-line only-journal">${escapeHtml(passages)}</div>` : ''}
+      ${relation ? `<div class="snippet relation">${escapeHtml(relation)}</div>` : snippet ? `<div class="snippet">${speaker ? `<span class="only-leather">${escapeHtml(speaker)} — </span>` : ''}${escapeHtml(snippet.slice(0, 220))}</div>` : ''}
+      ${n.tags.length ? `<div class="tags">${n.tags.map(t => `<span class="tag"><span class="only-journal">#</span>${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+    </button>`;
+}
+
 function renderList() {
   renderChips();
   const list = notes.filter(matches).sort((a, b) =>
@@ -1063,24 +1166,7 @@ function renderList() {
   for (const n of list) {
     const month = n.date ? formatDate(n.date, { month: 'long', year: 'numeric' }) : 'No date';
     if (month !== lastMonth) { html += `<div class="month"><span>${escapeHtml(month)}</span></div>`; lastMonth = month; }
-    const isSermon = n.type === 'sermon';
-    const snippet = snippetOf(n.body);
-    const passages = n.passages.trim();
-    const speaker = isSermon ? n.speaker.trim() : '';
-    const kind = isSermon ? ['Sermon', speaker].filter(Boolean).join(' · ')
-      : (/^# Scripture\n/.test(n.body) ? 'Study · SOAP' : 'Study');
-    const date = n.date ? formatDate(n.date, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
-    html += `<button class="card" data-id="${n.id}">
-      <div class="card-top">
-        <span class="card-ref only-leather">${icon(isSermon ? 'church' : 'book')}${escapeHtml(passages || (isSermon ? 'Sermon' : 'Study'))}</span>
-        <span class="card-kind only-journal ${n.type}">${escapeHtml(kind)}</span>
-        <span class="card-date">${escapeHtml(date)}</span>
-      </div>
-      <h2>${escapeHtml(displayTitle(n))}</h2>
-      ${passages && n.title.trim() ? `<div class="ref-line only-journal">${escapeHtml(passages)}</div>` : ''}
-      ${snippet ? `<div class="snippet">${speaker ? `<span class="only-leather">${escapeHtml(speaker)} — </span>` : ''}${escapeHtml(snippet.slice(0, 220))}</div>` : ''}
-      ${n.tags.length ? `<div class="tags">${n.tags.map(t => `<span class="tag"><span class="only-journal">#</span>${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-    </button>`;
+    html += noteCardHtml(n);
   }
   el.innerHTML = html;
   $$('#noteList .card').forEach(c => c.addEventListener('click', () => { location.hash = '#/note/' + c.dataset.id; }));
@@ -1131,8 +1217,7 @@ function openEditor(id, isNew) {
   setPreview(!isNew && !isBlank(n));
   $('#saveState').textContent = '';
   updateStamp();
-  $('#listView').hidden = true;
-  $('#editorView').hidden = false;
+  showView('editor');
   window.scrollTo(0, 0);
   if (isNew) setTimeout(() => (n.type === 'sermon' ? F.title : F.passages).focus(), 50);
   loadBible(offlineCode(settings.verseText)).catch(() => {});
@@ -1201,9 +1286,6 @@ function closeEditor() {
     if (isBlank(current)) deleteNote(current.id);
     current = null;
   }
-  $('#editorView').hidden = true;
-  $('#listView').hidden = false;
-  renderList();
 }
 
 $('#backBtn').addEventListener('click', () => {
@@ -1340,16 +1422,518 @@ $('#modeBtn').addEventListener('mousedown', e => e.preventDefault());
 $('#modeBtn').addEventListener('click', () => setPreview(!previewMode));
 
 /* =========================================================
+   Bible reader: chapters, highlights, and links to notes
+   ========================================================= */
+const HL_KEY = 'bibleNotes.highlights.v1';
+let highlights = (() => {
+  try { return JSON.parse(localStorage.getItem(HL_KEY)) || {}; } catch { return {}; }
+})();
+function persistHighlights() {
+  try { localStorage.setItem(HL_KEY, JSON.stringify(highlights)); }
+  catch { toast('Could not save the highlight. Storage may be full.'); }
+}
+// Highlights are keyed by verse, not translation: "42.10.11" = John 10:11 (book index is 0-based).
+const verseKey = (book, ch, v) => `${book}.${ch}.${v}`;
+
+const reader = {
+  book: BOOK_INDEX.get('John'), ch: 1,
+  verses: new Map(),    // verse number → text for the chapter on screen
+  code: 'BSB',          // translation actually shown
+  selected: new Set(),
+  loadId: 0,
+  loaded: '',           // "book.ch.code" of the chapter on screen
+};
+if (settings.lastRead && BOOKS[settings.lastRead.book]) Object.assign(reader, settings.lastRead);
+
+const bookName = (book, ch) => (BOOKS[book][0] === 'Psalms' && ch ? 'Psalm' : BOOKS[book][0]);
+const chapterLabel = (book, ch) => `${bookName(book, ch)} ${ch}`;
+
+/** "John 10:14-15, 17" for a set of verses in one chapter. */
+function versesLabel(book, ch, list) {
+  const vs = [...list].sort((a, b) => a - b);
+  const parts = [];
+  for (let i = 0; i < vs.length; i++) {
+    let j = i;
+    while (j + 1 < vs.length && vs[j + 1] === vs[j] + 1) j++;
+    parts.push(i === j ? `${vs[i]}` : `${vs[i]}-${vs[j]}`);
+    i = j;
+  }
+  return `${bookName(book, ch)} ${ch}:${parts.join(', ')}`;
+}
+
+/** Verse lines (the same format auto-insert uses) for selected verses, one per run of verses. */
+function verseLinesFor(book, ch, list) {
+  const vs = [...list].sort((a, b) => a - b);
+  const lines = [];
+  for (let i = 0; i < vs.length; i++) {
+    let j = i;
+    while (j + 1 < vs.length && vs[j + 1] === vs[j] + 1) j++;
+    const run = vs.slice(i, j + 1);
+    const text = formatVerseNumbers(run.map(v => `[${v}] ${reader.verses.get(v) || ''}`).join(' '), run.length > 1)
+      .replace(/^[“"]\s*/, '');
+    lines.push(`${versesLabel(book, ch, run)} “${text}” (${reader.code})`);
+    i = j;
+  }
+  return lines;
+}
+
+// References including chapter-only ones ("Psalm 23", "John 10:1-18"), for the Scripture field.
+const LOOSE_REF_RE = new RegExp(
+  `(^|[^A-Za-z0-9])(${bookAlternation})\\.?\\s?(\\d{1,3})(?::(\\d{1,3}))?(?:\\s?[-–]\\s?(\\d{1,3})(?::(\\d{1,3}))?)?(?![A-Za-z0-9])`,
+  'gi'
+);
+function findLooseRefs(text) {
+  const refs = [];
+  for (const m of (text || '').matchAll(LOOSE_REF_RE)) {
+    const [, , book, ch, v1, a, b] = m;
+    const canon = BOOK_LOOKUP.get(book.replace(/\s+/g, '').toLowerCase());
+    if (!canon) continue;
+    const r = { book: BOOK_INDEX.get(canon), ch: +ch, hasVerse: !!v1 };
+    if (v1) { Object.assign(r, { v1: +v1, ch2: +ch, v2: +v1 }); if (b) { r.ch2 = +a; r.v2 = +b; } else if (a) r.v2 = +a; }
+    else Object.assign(r, { v1: 1, ch2: a ? +a : +ch, v2: 999 });
+    if (r.ch2 < r.ch || (r.ch2 === r.ch && r.v2 < r.v1)) { r.ch2 = r.ch; r.v2 = r.v1; }
+    refs.push(r);
+  }
+  return refs;
+}
+
+/* ----- Which notes point at which verses ----- */
+const noteRefCache = new Map();
+/** Every passage a note points at: kind "quotes" (inserted verse), "mentions" (in the text) or "covers" (Scripture field). */
+function noteRefs(n) {
+  const stamp = n.updatedAt + '|' + n.passages + '|' + n.body.length;
+  const hit = noteRefCache.get(n.id);
+  if (hit && hit.stamp === stamp) return hit.refs;
+  const refs = findLooseRefs(n.passages).map(r => ({ ...r, kind: 'covers' }));
+  for (const line of n.body.split('\n')) {
+    const verse = parseVerseLine(line);
+    const kind = verse ? 'quotes' : 'mentions';
+    for (const r of findVerseRefs(verse ? verse.ref : line)) refs.push({ ...r, kind });
+  }
+  noteRefCache.set(n.id, { stamp, refs });
+  return refs;
+}
+const KIND_RANK = { quotes: 3, mentions: 2, covers: 1 };
+const inRange = (r, book, ch, v) => r.book === book && (ch > r.ch || (ch === r.ch && v >= r.v1)) && (ch < r.ch2 || (ch === r.ch2 && v <= r.v2));
+
+/** Notes linked to one verse, strongest link first. */
+function notesForVerse(book, ch, v) {
+  const out = [];
+  for (const n of notes) {
+    let kind = null;
+    for (const r of noteRefs(n)) if (inRange(r, book, ch, v) && (!kind || KIND_RANK[r.kind] > KIND_RANK[kind])) kind = r.kind;
+    if (kind) out.push({ note: n, kind });
+  }
+  return out.sort((a, b) => KIND_RANK[b.kind] - KIND_RANK[a.kind] || (b.note.date || '').localeCompare(a.note.date || ''));
+}
+
+/** For a chapter: notes touching it, and verse → number of notes that quote or mention it. */
+function chapterLinks(book, ch) {
+  const perVerse = new Map();
+  const touching = [];
+  for (const n of notes) {
+    let touched = false;
+    const marked = new Set();
+    for (const r of noteRefs(n)) {
+      if (r.book !== book || ch < r.ch || ch > r.ch2) continue;
+      touched = true;
+      if (r.kind === 'covers') continue; // shown in the chapter banner instead of on every verse
+      const from = ch === r.ch ? r.v1 : 1;
+      const to = Math.min(ch === r.ch2 ? r.v2 : 200, 200);
+      for (let v = from; v <= to; v++) marked.add(v);
+    }
+    for (const v of marked) perVerse.set(v, (perVerse.get(v) || 0) + 1);
+    if (touched) touching.push(n);
+  }
+  touching.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return { perVerse, touching };
+}
+
+/* ----- Loading chapter text ----- */
+/** "[1] text [2] text" → Map of verse → text. */
+function markersToMap(text) {
+  const parts = (text || '').split(/\s*\[(\d+)\]\s*/);
+  const map = new Map();
+  if (parts[0].trim()) map.set(1, parts[0].trim());
+  for (let i = 1; i < parts.length; i += 2) {
+    const t = (parts[i + 1] || '').replace(/\s+/g, ' ').trim();
+    if (t) map.set(+parts[i], t);
+  }
+  return map;
+}
+const arrayToMap = arr => new Map(arr.map((t, i) => [i + 1, t]).filter(([, t]) => t));
+
+async function fetchChapter(t, code, book, ch, key) {
+  const yv = /^YV:(\d+)$/.exec(code);
+  if (yv) {
+    const map = yvVerseMap(await yvPassageHtml(yv[1], `${USFM_BOOKS[book]}.${ch}`, key));
+    for (const [v, text] of map) map.set(v, text.replace(/\s+/g, ' ').trim());
+    return map;
+  }
+  return markersToMap(await t.fetch(chapterLabel(book, ch), key, { book, ch, v1: 1, ch2: ch, v2: 999 }));
+}
+
+/** The chapter in the chosen translation, or BSB with a note saying why. */
+async function loadChapter(book, ch) {
+  const code = translationFor(settings.verseText) ? settings.verseText : 'BSB';
+  const t = translationFor(code);
+  const bsb = await loadBible('BSB');
+  const fallback = why => ({ verses: arrayToMap(bsb[book][ch - 1]), code: 'BSB', note: `Showing the BSB: ${why}.` });
+  if (!t.fetch) return { verses: arrayToMap((await loadBible(offlineCode(code)))[book][ch - 1]), code };
+
+  const key = ((settings.apiKeys || {})[t.keyId] || t.defaultKey || '').trim();
+  if (!key) return fallback(`add your ${t.keyId === 'YV' ? 'YouVersion' : t.abbr} key in Settings`);
+  const cacheKey = `chapter|${code}|${book}.${ch}`;
+  try {
+    if (!onlineCache.has(cacheKey)) onlineCache.set(cacheKey, await withTimeout(fetchChapter(t, code, book, ch, key), 15000));
+    const verses = onlineCache.get(cacheKey);
+    if (verses.size) return { verses, code: t.abbr };
+    return fallback(`${t.abbr} didn’t return ${chapterLabel(book, ch)}`);
+  } catch (e) {
+    return fallback(e instanceof KeyError ? `${t.abbr} ${e.message}` : `couldn’t reach ${t.abbr}`);
+  }
+}
+
+/* ----- Showing a chapter ----- */
+function neighborChapter(dir) {
+  const bsb = window.BIBLE_DATA && BIBLE_DATA.BSB;
+  if (!bsb) return null;
+  let { book, ch } = reader;
+  ch += dir;
+  if (ch < 1) { if (book === 0) return null; book--; ch = bsb[book].length; }
+  else if (ch > bsb[book].length) { if (book === BOOKS.length - 1) return null; book++; ch = 1; }
+  return { book, ch };
+}
+
+const bibleHash = (book, ch, v) => `#/bible/${USFM_BOOKS[book]}/${ch}${v ? '/' + v : ''}`;
+function goToChapter(book, ch, v, { replace = false } = {}) {
+  const h = bibleHash(book, ch, v);
+  if (replace) location.replace(h); else location.hash = h;
+}
+
+async function showChapter(book, ch, verse) {
+  const want = `${book}.${ch}.${settings.verseText}`;
+  reader.book = book; reader.ch = ch;
+  settings.lastRead = { book, ch };
+  persistSettings();
+  $('#bookBtnLabel').textContent = chapterLabel(book, ch);
+  syncReadTrans();
+  if (reader.loaded !== want) {
+    clearSelection();
+    const id = ++reader.loadId;
+    $('#chapter').innerHTML = '<p class="ch-loading">Loading…</p>';
+    $('#chNotes').hidden = true;
+    const res = await loadChapter(book, ch);
+    if (id !== reader.loadId) return;
+    reader.verses = res.verses;
+    reader.code = res.code;
+    reader.loaded = want;
+    $('#chStatus').hidden = !res.note;
+    $('#chStatus').textContent = res.note || '';
+    renderChapter();
+    window.scrollTo(0, 0);
+  } else {
+    renderChapter(); // notes or highlights may have changed since it was drawn
+  }
+  $('#prevCh').disabled = !neighborChapter(-1);
+  $('#nextCh').disabled = !neighborChapter(1);
+  if (verse) {
+    const el = $(`#chapter .v[data-v="${verse}"]`);
+    if (el) {
+      el.scrollIntoView({ block: 'center' });
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 1600);
+    }
+  }
+}
+
+function renderChapter() {
+  const { book, ch } = reader;
+  const { perVerse, touching } = chapterLinks(book, ch);
+  const parts = [];
+  parts.push(`<div class="ch-heading"><span class="ch-num only-journal">${ch}</span>` +
+    `<span class="ch-name">${escapeHtml(BOOKS[book][0])}<span class="only-journal">, chapter ${ch}</span></span></div><p class="ch-text">`);
+  let first = true;
+  for (const [v, text] of reader.verses) {
+    const hl = highlights[verseKey(book, ch, v)];
+    const count = perVerse.get(v);
+    const num = first && v === 1
+      ? `<span class="dropcap only-leather" aria-hidden="true">${ch}</span><sup class="vn only-journal">1</sup>`
+      : `<sup class="vn">${v}</sup>`;
+    first = false;
+    parts.push(`<span class="v${hl ? ' hl-' + hl : ''}${reader.selected.has(v) ? ' sel' : ''}" data-v="${v}" role="button" tabindex="0" aria-pressed="${reader.selected.has(v)}">` +
+      `${num}<span class="vt">${escapeHtml(text)}</span></span>` +
+      (count ? `<button class="v-note" data-note-v="${v}" aria-label="${count} note${count > 1 ? 's' : ''} on verse ${v}">` +
+        `<svg class="ic only-leather" aria-hidden="true"><use href="#i-pen"/></svg><span class="only-journal">${count} note${count > 1 ? 's' : ''}</span></button>` : '') +
+      ' ');
+  }
+  parts.push('</p>');
+  $('#chapter').innerHTML = parts.join('');
+
+  const banner = $('#chNotes');
+  banner.hidden = !touching.length;
+  if (touching.length) {
+    const n = touching[0];
+    const date = n.date ? formatDate(n.date, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+    const more = touching.length > 1 ? ` +${touching.length - 1} more` : '';
+    banner.innerHTML = icon(n.type === 'sermon' ? 'church' : 'book') +
+      `<span class="chn-text"><span class="chn-label"><span class="only-leather">In your notes</span><span class="only-journal">From your notes</span>` +
+      `${n.passages.trim() ? ' · ' + escapeHtml(n.passages.trim()) : ''}</span>` +
+      `<span class="chn-title">${escapeHtml(displayTitle(n))}<span class="chn-date"> · ${escapeHtml(date)}${more}</span></span></span>` +
+      icon('next');
+  }
+}
+
+/* ----- Selecting verses ----- */
+function clearSelection() {
+  reader.selected.clear();
+  $$('#chapter .v.sel').forEach(el => { el.classList.remove('sel'); el.setAttribute('aria-pressed', 'false'); });
+  updateSelSheet();
+}
+function updateSelSheet() {
+  const n = reader.selected.size;
+  $('#selSheet').hidden = !n;
+  if (!n) return;
+  $('#selRef').textContent = versesLabel(reader.book, reader.ch, reader.selected);
+  $('#selCount').textContent = `${n} verse${n > 1 ? 's' : ''} selected`;
+}
+function toggleVerse(el) {
+  const v = +el.dataset.v;
+  if (reader.selected.has(v)) reader.selected.delete(v); else reader.selected.add(v);
+  el.classList.toggle('sel', reader.selected.has(v));
+  el.setAttribute('aria-pressed', String(reader.selected.has(v)));
+  updateSelSheet();
+}
+
+$('#chapter').addEventListener('click', e => {
+  const marker = e.target.closest('.v-note');
+  if (marker) { openVerseSheet(+marker.dataset.noteV); return; }
+  const v = e.target.closest('.v');
+  if (v) toggleVerse(v);
+});
+$('#chapter').addEventListener('keydown', e => {
+  const v = e.target.closest('.v');
+  if (v && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleVerse(v); }
+});
+
+$('#selClose').addEventListener('click', clearSelection);
+$$('#selSheet [data-hl]').forEach(b => b.addEventListener('click', () => {
+  const color = b.dataset.hl;
+  for (const v of reader.selected) {
+    const k = verseKey(reader.book, reader.ch, v);
+    if (color) highlights[k] = color; else delete highlights[k];
+    const el = $(`#chapter .v[data-v="${v}"]`);
+    if (el) {
+      el.classList.remove(...[...el.classList].filter(c => c.startsWith('hl-')));
+      if (color) el.classList.add('hl-' + color);
+    }
+  }
+  persistHighlights();
+  clearSelection();
+}));
+
+function selectionText() {
+  return verseLinesFor(reader.book, reader.ch, reader.selected).join('\n');
+}
+$('#selCopy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(selectionText()); toast('Copied'); }
+  catch { toast('Couldn’t copy on this device'); }
+  clearSelection();
+});
+$('#selShare').addEventListener('click', async () => {
+  const text = selectionText();
+  if (navigator.share) {
+    try { await navigator.share({ text }); clearSelection(); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(text); toast('Copied to share'); } catch {}
+  clearSelection();
+});
+$('#selNote').addEventListener('click', () => newNoteOnVerses(reader.book, reader.ch, [...reader.selected]));
+
+/** Start a study note on some verses, with their text filled in. */
+function newNoteOnVerses(book, ch, list) {
+  const n = createNote('study');
+  n.passages = versesLabel(book, ch, list);
+  n.body = verseLinesFor(book, ch, list).join('\n') + '\n';
+  persistNotes();
+  clearSelection();
+  closeVerseSheet();
+  location.hash = '#/note/' + n.id + '/new';
+}
+
+/* ----- Notes on a verse (or on the whole chapter) ----- */
+let verseSheetFor = null;
+function openVerseSheet(v) {
+  const { book, ch } = reader;
+  verseSheetFor = v;
+  clearSelection();
+  const label = v ? `${bookName(book, ch)} ${ch}:${v}` : chapterLabel(book, ch);
+  $('#vsRef').textContent = label;
+
+  const fig = $('#vsVerse');
+  fig.hidden = !v || !reader.verses.has(v);
+  if (!fig.hidden) {
+    const hl = highlights[verseKey(book, ch, v)];
+    fig.className = 'c-verse' + (hl ? ' hl-' + hl : '');
+    fig.innerHTML = `<blockquote><span class="vt">${escapeHtml(reader.verses.get(v))}</span></blockquote><figcaption>${escapeHtml(reader.code)}</figcaption>`;
+  }
+
+  const RELATION = { quotes: 'Quotes this verse', mentions: 'Mentions this verse' };
+  const items = v
+    ? notesForVerse(book, ch, v).map(({ note, kind }) => ({ note, text: RELATION[kind] || `Covers ${note.passages.trim()}` }))
+    : chapterLinks(book, ch).touching.map(note => ({ note, text: note.passages.trim() ? `Covers ${note.passages.trim()}` : 'Mentions this chapter' }));
+  $('#vsNotes').innerHTML = items.length
+    ? items.map(({ note, text }) => noteCardHtml(note, text)).join('')
+    : `<p class="vs-empty">No notes on ${escapeHtml(label)} yet.</p>`;
+
+  $('#vsNew').hidden = !v;
+  $('#vsNew').innerHTML = `${icon('plus')}<span class="only-leather">New note on ${escapeHtml(label)}</span><span class="only-journal">New entry on ${escapeHtml(label)}</span>`;
+  $('#vsGateway').href = refUrl(label);
+  $('#vsGateway').textContent = `Read ${label} on Bible Gateway (${settings.translation})`;
+  $('#verseSheet').hidden = false;
+  $('#verseBackdrop').hidden = false;
+}
+function closeVerseSheet() {
+  $('#verseSheet').hidden = true;
+  $('#verseBackdrop').hidden = true;
+}
+$('#chNotes').addEventListener('click', () => openVerseSheet(null));
+$('#vsClose').addEventListener('click', closeVerseSheet);
+$('#verseBackdrop').addEventListener('click', closeVerseSheet);
+$('#vsNew').addEventListener('click', () => { if (verseSheetFor) newNoteOnVerses(reader.book, reader.ch, [verseSheetFor]); });
+$('#vsNotes').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  closeVerseSheet();
+  location.hash = '#/note/' + card.dataset.id;
+});
+
+/* ----- Chapter navigation ----- */
+$('#prevCh').addEventListener('click', () => { const n = neighborChapter(-1); if (n) goToChapter(n.book, n.ch, null, { replace: true }); });
+$('#nextCh').addEventListener('click', () => { const n = neighborChapter(1); if (n) goToChapter(n.book, n.ch, null, { replace: true }); });
+
+// Swipe left/right on the text to change chapters.
+let swipe = null;
+$('#chapter').addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  swipe = e.touches.length === 1 ? { x: t.clientX, y: t.clientY, at: Date.now() } : null;
+}, { passive: true });
+$('#chapter').addEventListener('touchend', e => {
+  if (!swipe) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, startedAt = swipe.at;
+  swipe = null;
+  if (Math.abs(dx) > 80 && Math.abs(dy) < 50 && Date.now() - startedAt < 800) {
+    const n = neighborChapter(dx < 0 ? 1 : -1);
+    if (n) goToChapter(n.book, n.ch, null, { replace: true });
+  }
+}, { passive: true });
+
+/* ----- Book & chapter picker ----- */
+function renderBookList() {
+  const group = (title, from, to) => `<p class="label-caps book-group">${title}</p><div class="book-grid">` +
+    BOOKS.slice(from, to).map(([name], i) =>
+      `<button data-book="${from + i}"${from + i === reader.book ? ' aria-current="true"' : ''}>${escapeHtml(name)}</button>`).join('') + '</div>';
+  $('#bookList').innerHTML = group('Old Testament', 0, 39) + group('New Testament', 39, 66);
+}
+function showBooks() {
+  $('#bookDlgTitle').textContent = 'Books';
+  $('#bookBack').hidden = true;
+  $('#bookList').hidden = false;
+  $('#chapterGrid').hidden = true;
+}
+async function showChapterGrid(book) {
+  const bsb = await loadBible('BSB');
+  $('#bookDlgTitle').textContent = BOOKS[book][0];
+  $('#bookBack').hidden = false;
+  $('#bookList').hidden = true;
+  const grid = $('#chapterGrid');
+  grid.hidden = false;
+  grid.innerHTML = bsb[book].map((_, i) =>
+    `<button data-ch="${i + 1}"${book === reader.book && i + 1 === reader.ch ? ' aria-current="true"' : ''}>${i + 1}</button>`).join('');
+  grid.dataset.book = book;
+  if (bsb[book].length === 1) { $('#bookDlg').close(); goToChapter(book, 1, null, { replace: true }); }
+}
+function openBookPicker(focusSearch) {
+  renderBookList();
+  showBooks();
+  $('#goInput').value = '';
+  $('#bookDlg').showModal();
+  if (focusSearch) $('#goInput').focus();
+  else { const cur = $('#bookList [aria-current]'); if (cur) cur.scrollIntoView({ block: 'center' }); }
+}
+$('#bookBtn').addEventListener('click', () => openBookPicker(false));
+$('#goBtn').addEventListener('click', () => openBookPicker(true));
+$('#bookClose').addEventListener('click', () => $('#bookDlg').close());
+$('#bookBack').addEventListener('click', showBooks);
+$('#bookDlg').addEventListener('click', e => { if (e.target === $('#bookDlg')) $('#bookDlg').close(); });
+$('#bookList').addEventListener('click', e => { const b = e.target.closest('[data-book]'); if (b) showChapterGrid(+b.dataset.book); });
+$('#chapterGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-ch]');
+  if (!b) return;
+  $('#bookDlg').close();
+  goToChapter(+$('#chapterGrid').dataset.book, +b.dataset.ch, null, { replace: true });
+});
+$('#goForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const r = findLooseRefs($('#goInput').value)[0];
+  const bsb = await loadBible('BSB');
+  if (!r || !bsb[r.book][r.ch - 1]) { toast('Couldn’t find that passage'); return; }
+  $('#bookDlg').close();
+  goToChapter(r.book, r.ch, r.hasVerse ? r.v1 : null, { replace: true });
+});
+
+/* ----- Translation picker in the reader ----- */
+function syncReadTrans() {
+  renderVerseTextOptions();
+  const sel = $('#readTrans');
+  sel.innerHTML = $('#sVerseText').innerHTML;
+  sel.value = settings.verseText;
+  $('#readTransLabel').textContent = (translationFor(settings.verseText) || { abbr: 'BSB' }).abbr;
+}
+$('#readTrans').addEventListener('change', e => {
+  settings.verseText = e.target.value;
+  persistSettings();
+  showChapter(reader.book, reader.ch);
+});
+
+/* ----- Switching between Notes and Bible ----- */
+function showView(name) {
+  $('#listView').hidden = name !== 'notes';
+  $('#editorView').hidden = name !== 'editor';
+  $('#bibleView').hidden = name !== 'bible';
+  $('#tabBar').hidden = name === 'editor';
+  document.documentElement.dataset.view = name;
+  $$('#tabBar .tab').forEach(t => t.setAttribute('aria-current', t.dataset.tab === name ? 'page' : 'false'));
+  if (name !== 'bible') { clearSelection(); closeVerseSheet(); }
+}
+$$('#tabBar .tab').forEach(t => t.addEventListener('click', () => {
+  if (t.dataset.tab === 'bible') goToChapter(reader.book, reader.ch);
+  else location.hash = '';
+}));
+
+/* =========================================================
    Routing (so the phone's Back button works)
    ========================================================= */
 function route() {
-  const m = location.hash.match(/^#\/note\/([^/]+)(\/new)?$/);
+  let m = location.hash.match(/^#\/note\/([^/]+)(\/new)?$/);
   if (m) {
     if (current && current.id !== m[1]) closeEditor();
     if (!current || current.id !== m[1]) openEditor(m[1], !!m[2]);
-  } else {
-    closeEditor();
+    return;
   }
+  closeEditor();
+  m = location.hash.match(/^#\/bible(?:\/([1-3A-Z]{3})\/(\d+)(?:\/(\d+))?)?$/);
+  if (m) {
+    showView('bible');
+    const book = m[1] ? USFM_BOOKS.indexOf(m[1]) : reader.book;
+    if (book < 0) { goToChapter(reader.book, reader.ch, null, { replace: true }); return; }
+    showChapter(book, m[2] ? +m[2] : (book === reader.book ? reader.ch : 1), m[3] ? +m[3] : null);
+    return;
+  }
+  showView('notes');
+  renderList();
 }
 window.addEventListener('hashchange', route);
 
@@ -1471,7 +2055,7 @@ $('#sApiKey').addEventListener('input', e => {
 });
 
 $('#exportJson').addEventListener('click', () => {
-  const data = { app: 'bible-notes', version: 1, exportedAt: new Date().toISOString(), notes };
+  const data = { app: 'bible-notes', version: 2, exportedAt: new Date().toISOString(), notes, highlights };
   download(`bible-notes-backup-${todayISO()}.json`, JSON.stringify(data, null, 2), 'application/json');
 });
 
@@ -1499,8 +2083,17 @@ $('#importFile').addEventListener('change', async e => {
       else if (n.updatedAt > existing.updatedAt) { Object.assign(existing, n); updated++; }
     }
     persistNotes();
+    // Highlights: keep the ones on this phone, add any it doesn't have.
+    let hl = 0;
+    if (data.highlights && typeof data.highlights === 'object') {
+      for (const [k, color] of Object.entries(data.highlights)) {
+        if (!(k in highlights) && /^\d+\.\d+\.\d+$/.test(k) && typeof color === 'string') { highlights[k] = color; hl++; }
+      }
+      persistHighlights();
+      reader.loaded = '';
+    }
     renderList();
-    toast(`Imported: ${added} new, ${updated} updated`);
+    toast(`Imported: ${added} new, ${updated} updated${hl ? `, ${hl} highlights` : ''}`);
   } catch {
     toast('That file isn’t a Bible Notes backup');
   }

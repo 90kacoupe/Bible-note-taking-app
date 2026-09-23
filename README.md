@@ -13,6 +13,15 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
 
   Each style has a light and a dark mode (Settings → Light or dark). The fonts are bundled, so everything
   works offline.
+- **Bible reader (the Bible tab):**
+  - Read any chapter in BSB or KJV (offline), or ESV, NLT or your YouVersion translations (online; falls back to BSB when offline).
+  - Tap the chapter name to pick a book and chapter, tap the search icon to jump to a reference (e.g. `rom 8:28`),
+    and swipe or use the arrows to change chapters. The app remembers where you left off.
+  - **Highlight:** tap verses to select them, then choose one of five colors. Highlights are saved per verse, so they
+    show in every translation, and they're included in your backup.
+  - **Copy, share, or start a note** from selected verses. The new note has the passage and verse text filled in.
+  - **Your notes, linked:** a banner shows notes that cover the chapter, and a marker appears on verses your notes
+    quote or mention. Tap it to see those notes. Verse references in your notes open the reader.
 - **Reading view:** notes open ready to read. Tap **Edit** to change them. In the reading view you can
   tick off applications as you do them.
 

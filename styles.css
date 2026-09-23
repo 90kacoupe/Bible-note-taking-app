@@ -521,3 +521,195 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; font-
 :root:not([data-look="journal"]) .toast button { background: transparent; color: var(--on-leather-strong); font-family: var(--f-display); letter-spacing: 0.12em; text-transform: uppercase; }
 :root[data-look="journal"] .toast { background: var(--ink); color: var(--bg); border-radius: 24px; }
 :root[data-look="journal"] .toast button { background: var(--bg); color: var(--ink); border-radius: 18px; font-size: 0.9em; }
+
+/* =========================================================
+   Bible reader
+   ========================================================= */
+:root { --hl-gold: #efd98f; --hl-rose: #efc4b8; --hl-sage: #cfdcb6; --hl-blue: #c6d8e8; --hl-lavender: #dccbe6; --sel-bg: rgba(142, 27, 27, 0.08); }
+:root[data-look="journal"] { --hl-gold: #f3d77e; --hl-rose: #f2c3c9; --sel-bg: rgba(168, 72, 31, 0.08); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --hl-gold: #5c4b1a; --hl-rose: #5c2f2a; --hl-sage: #394a2b; --hl-blue: #27405a; --hl-lavender: #46344f; --sel-bg: rgba(255, 255, 255, 0.08); }
+}
+:root[data-theme="dark"] { --hl-gold: #5c4b1a; --hl-rose: #5c2f2a; --hl-sage: #394a2b; --hl-blue: #27405a; --hl-lavender: #46344f; --sel-bg: rgba(255, 255, 255, 0.08); }
+
+/* Room for the tab bar */
+#listView main { padding-bottom: calc(180px + env(safe-area-inset-bottom)); }
+.fab-wrap { bottom: calc(92px + env(safe-area-inset-bottom)); }
+
+/* ---------- Tab bar ---------- */
+.tabbar { position: fixed; z-index: 30; display: flex; align-items: center; }
+.tabbar .tab { border: 0; background: transparent; display: flex; align-items: center; justify-content: center; }
+.tabbar .tab .ic { width: 22px; height: 22px; }
+.tb-arrow { display: grid; place-items: center; padding: 0; }
+.tb-arrow .ic { width: 20px; height: 20px; stroke-width: 1.8; }
+.tb-arrow:disabled { opacity: 0.35; }
+:root:not([data-view="bible"]) .tb-arrow { display: none; }
+
+:root:not([data-look="journal"]) .tabbar {
+  left: 0; right: 0; bottom: 0; height: calc(66px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+  background: var(--leather); border-top: 4px double var(--gold);
+}
+:root:not([data-look="journal"]) .tabbar .tab {
+  flex: 1; height: 100%; flex-direction: column; gap: 2px; color: #b39a70;
+  font-family: var(--f-display); font-weight: 700; font-size: 0.72em; letter-spacing: 0.18em; text-transform: uppercase;
+}
+:root:not([data-look="journal"]) .tabbar .tab[aria-current="page"] { color: var(--on-leather-strong); }
+:root:not([data-look="journal"]) .tb-arrow {
+  position: fixed; bottom: calc(84px + env(safe-area-inset-bottom)); width: 44px; height: 44px; border-radius: 22px;
+  border: 1px solid var(--gold); background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+}
+:root:not([data-look="journal"]) #prevCh { left: 14px; }
+:root:not([data-look="journal"]) #nextCh { right: 14px; }
+
+:root[data-look="journal"] .tabbar {
+  left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom)); gap: 6px; padding: 6px;
+  border-radius: 30px; background: var(--surface); border: 1px solid var(--rule); box-shadow: 0 10px 26px rgba(90, 64, 30, 0.18);
+}
+:root[data-look="journal"] .tabbar .tab { height: 44px; padding: 0 16px; gap: 6px; border-radius: 22px; color: var(--muted); font-weight: 600; font-size: 0.85em; }
+:root[data-look="journal"] .tabbar .tab .ic { width: 18px; height: 18px; }
+:root[data-look="journal"] .tabbar .tab[aria-current="page"] { background: var(--accent); color: var(--on-accent); }
+:root[data-look="journal"] .tb-arrow { width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: var(--muted); }
+
+/* ---------- Reader header ---------- */
+.bible-head {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px 14px;
+}
+.book-btn { height: 44px; display: flex; align-items: center; gap: 6px; border: 0; background: transparent; font-family: var(--f-display); font-weight: 600; font-size: 1.45em; min-width: 0; }
+.book-btn .ic { width: 16px; height: 16px; stroke-width: 2; }
+.bible-head-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+.trans-pill { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; font-weight: 600; cursor: pointer; }
+.trans-pill select { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+:root:not([data-look="journal"]) .bible-head { background: var(--leather); color: var(--on-leather); border-bottom: 4px double var(--gold); }
+:root:not([data-look="journal"]) .book-btn { color: var(--on-leather-strong); }
+:root:not([data-look="journal"]) .bible-head .icon-btn { color: var(--on-leather); }
+:root:not([data-look="journal"]) .trans-pill { height: 34px; border: 1px solid #7a5530; border-radius: var(--radius); font-variant: small-caps; text-transform: lowercase; letter-spacing: 0.1em; }
+:root[data-look="journal"] .bible-head { background: var(--bg); padding-top: calc(12px + env(safe-area-inset-top)); }
+:root[data-look="journal"] .book-btn { height: 46px; padding: 0 16px 0 18px; border-radius: 23px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); font-size: 1.3em; }
+:root[data-look="journal"] .book-btn .ic { color: var(--accent); }
+:root[data-look="journal"] .bible-head .icon-btn { background: var(--surface); border-color: var(--rule); color: var(--muted); }
+:root[data-look="journal"] .trans-pill { height: 44px; border-radius: 22px; background: var(--ink); color: var(--bg); font-size: 0.8em; letter-spacing: 0.08em; }
+
+.bible-main { max-width: 680px; margin: 0 auto; padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+
+/* Notes on this chapter */
+.ch-notes { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; color: var(--ink); font: inherit; border: 0; }
+.ch-notes > .ic { width: 18px; height: 18px; color: var(--accent); }
+.ch-notes > .ic:last-child { color: var(--muted); }
+.chn-text { flex: 1; display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.chn-title { font-weight: 600; }
+.chn-date { font-weight: 400; color: var(--muted); }
+:root:not([data-look="journal"]) .ch-notes { padding: 10px 20px; background: var(--surface-2); border-bottom: 1px solid var(--rule); }
+:root:not([data-look="journal"]) .chn-label { font-family: var(--f-display); font-weight: 700; font-size: 0.68em; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+:root:not([data-look="journal"]) .chn-date { font-style: italic; }
+:root[data-look="journal"] .ch-notes { position: relative; width: calc(100% - 40px); margin: 14px 20px 0; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+:root[data-look="journal"] .ch-notes::before { content: ''; position: absolute; top: -8px; right: 26px; width: 60px; height: 16px; background: rgba(201, 113, 63, 0.35); transform: rotate(-4deg); }
+:root[data-look="journal"] .ch-notes > .ic:first-child { display: none; }
+:root[data-look="journal"] .chn-label { font-family: var(--f-hand); font-size: 1.2em; color: var(--accent); }
+:root[data-look="journal"] .chn-title { font-family: var(--f-display); }
+:root[data-look="journal"] .chn-date { font-family: var(--f-body); font-size: 0.85em; }
+
+.ch-status { margin: 12px 20px 0; font-size: 0.82em; font-style: italic; color: var(--muted); text-align: center; }
+.ch-loading { color: var(--muted); font-style: italic; }
+
+/* The chapter text */
+.chapter { padding: 18px 22px 0; line-height: 1.65; }
+.ch-text { margin: 0; }
+.v { cursor: pointer; }
+.v:focus-visible { outline: none; }
+.v:focus-visible .vt { outline: 2px solid var(--accent); outline-offset: 1px; }
+.vn { font-size: 0.6em; font-weight: 600; color: var(--accent); margin-right: 2px; line-height: 0; }
+.v .vt { -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-color 0.2s; }
+.v.sel .vt { background-color: var(--sel-bg); text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 4px; }
+.v.flash .vt { background-color: var(--sel-bg); }
+.v-note { border: 0; background: transparent; padding: 0 2px; margin: 0; vertical-align: 1px; cursor: pointer; }
+.v-note .ic { width: 0.8em; height: 0.8em; color: var(--accent); stroke-width: 2; }
+
+:root:not([data-look="journal"]) .chapter { font-size: 1.03em; text-align: justify; hyphens: auto; }
+:root:not([data-look="journal"]) .ch-heading { text-align: center; margin-bottom: 10px; font-family: var(--f-display); font-weight: 700; font-size: 0.78em; letter-spacing: 0.34em; text-transform: uppercase; color: var(--muted); }
+.dropcap { float: left; font-family: var(--f-display); font-weight: 600; font-size: 3.9em; line-height: 0.82; color: var(--accent); margin: 6px 10px 0 0; }
+:root:not([data-look="journal"]) .v[class*="hl-"] .vt { padding: 1px 0; }
+:root:not([data-look="journal"]) .v.hl-gold .vt, :root:not([data-look="journal"]) .c-verse.hl-gold .vt { background-color: var(--hl-gold); }
+:root:not([data-look="journal"]) .v.hl-rose .vt, :root:not([data-look="journal"]) .c-verse.hl-rose .vt { background-color: var(--hl-rose); }
+:root:not([data-look="journal"]) .v.hl-sage .vt, :root:not([data-look="journal"]) .c-verse.hl-sage .vt { background-color: var(--hl-sage); }
+:root:not([data-look="journal"]) .v.hl-blue .vt, :root:not([data-look="journal"]) .c-verse.hl-blue .vt { background-color: var(--hl-blue); }
+:root:not([data-look="journal"]) .v.hl-lavender .vt, :root:not([data-look="journal"]) .c-verse.hl-lavender .vt { background-color: var(--hl-lavender); }
+
+:root[data-look="journal"] .chapter { margin: 16px 12px 0; padding: 18px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); line-height: 1.7; }
+:root[data-look="journal"] .ch-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+:root[data-look="journal"] .ch-num { font-family: var(--f-display); font-weight: 600; font-size: 2.6em; line-height: 1; color: var(--accent); }
+:root[data-look="journal"] .ch-name { font-family: var(--f-hand); font-size: 1.35em; color: var(--muted); }
+:root[data-look="journal"] .v.hl-gold .vt, :root[data-look="journal"] .c-verse.hl-gold .vt { background-image: linear-gradient(transparent 45%, var(--hl-gold) 45%); }
+:root[data-look="journal"] .v.hl-rose .vt, :root[data-look="journal"] .c-verse.hl-rose .vt { background-image: linear-gradient(transparent 45%, var(--hl-rose) 45%); }
+:root[data-look="journal"] .v.hl-sage .vt, :root[data-look="journal"] .c-verse.hl-sage .vt { background-image: linear-gradient(transparent 45%, var(--hl-sage) 45%); }
+:root[data-look="journal"] .v.hl-blue .vt, :root[data-look="journal"] .c-verse.hl-blue .vt { background-image: linear-gradient(transparent 45%, var(--hl-blue) 45%); }
+:root[data-look="journal"] .v.hl-lavender .vt, :root[data-look="journal"] .c-verse.hl-lavender .vt { background-image: linear-gradient(transparent 45%, var(--hl-lavender) 45%); }
+:root[data-look="journal"] .v.sel .vt { text-decoration-style: wavy; }
+:root[data-look="journal"] .v-note { display: inline-block; margin-left: 4px; padding: 0 7px; border-radius: 9px; background: var(--accent-bg); color: var(--accent); font-family: var(--f-hand); font-size: 1em; line-height: 1.3; }
+
+/* ---------- Bottom sheets ---------- */
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: 720px; margin: 0 auto; max-height: 82dvh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px; padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
+  background: var(--surface); box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.2);
+}
+.sheet.tall { min-height: 60dvh; }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 35; background: rgba(20, 12, 8, 0.4); }
+.sheet-grip { align-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--rule); flex: none; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sheet-title { display: flex; flex-direction: column; line-height: 1.15; }
+.sheet-head .icon-btn { color: var(--muted); }
+:root:not([data-look="journal"]) .sheet { border-top: 4px double var(--gold); }
+:root:not([data-look="journal"]) .sheet-ref { font-variant: small-caps; letter-spacing: 0.08em; font-size: 1.15em; font-weight: 600; color: var(--accent); }
+:root[data-look="journal"] .sheet { border-radius: 24px 24px 0 0; background: var(--bg); }
+:root[data-look="journal"] #selSheet { background: var(--surface); }
+:root[data-look="journal"] .sheet-kicker { font-family: var(--f-hand); font-size: 1.2em; color: var(--muted); }
+:root[data-look="journal"] .sheet-ref { font-family: var(--f-display); font-weight: 600; font-size: 1.35em; color: var(--accent); }
+:root[data-look="journal"] .sheet-head .icon-btn { border-color: var(--rule); }
+
+.hl-colors { display: flex; justify-content: space-between; gap: 6px; }
+.hl-colors button { width: 48px; height: 48px; border-radius: 24px; padding: 0; border: 1px solid var(--rule); display: grid; place-items: center; }
+.hl-colors [data-hl="gold"] { background: var(--hl-gold); }
+.hl-colors [data-hl="rose"] { background: var(--hl-rose); }
+.hl-colors [data-hl="sage"] { background: var(--hl-sage); }
+.hl-colors [data-hl="blue"] { background: var(--hl-blue); }
+.hl-colors [data-hl="lavender"] { background: var(--hl-lavender); }
+.hl-colors [data-hl=""] { background: transparent; border-style: dashed; color: var(--muted); }
+.hl-colors .ic { width: 18px; height: 18px; }
+
+.sheet-actions { display: flex; gap: 8px; }
+.sheet .btn { min-height: 48px; }
+.btn.primary { flex: 1; justify-content: center; }
+.btn.big { width: 100%; min-height: 52px; justify-content: center; font-size: 1em; flex: none; }
+:root:not([data-look="journal"]) .btn.primary { background: var(--leather); color: var(--on-leather-strong); border-color: var(--gold); font-family: var(--f-display); font-weight: 700; font-size: 1.05em; }
+:root[data-look="journal"] .sheet .btn { border-radius: 24px; }
+:root[data-look="journal"] .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+#vsVerse { margin: 0; }
+#vsVerse figcaption::before { content: none; }
+:root:not([data-look="journal"]) #vsVerse figcaption { font-variant: small-caps; text-transform: lowercase; }
+.vs-title { display: flex; align-items: center; gap: 12px; }
+:root:not([data-look="journal"]) .vs-title { font-family: var(--f-display); font-weight: 700; font-size: 0.72em; letter-spacing: 0.26em; text-transform: uppercase; color: var(--muted); }
+:root:not([data-look="journal"]) .vs-title::before, :root:not([data-look="journal"]) .vs-title::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+:root[data-look="journal"] .vs-title { font-family: var(--f-hand); font-weight: 600; font-size: 1.6em; line-height: 1; }
+#vsNotes .card { margin-bottom: 0; }
+:root[data-look="journal"] #vsNotes { display: flex; flex-direction: column; gap: 10px; }
+.snippet.relation { font-style: italic; -webkit-line-clamp: 1; }
+.vs-empty { margin: 0; color: var(--muted); font-style: italic; }
+.vs-link { align-self: center; font-size: 0.8em; color: var(--muted); }
+
+/* ---------- Book picker ---------- */
+#bookDlg .dlg-head { gap: 4px; padding-left: 12px; }
+.go-form { display: flex; gap: 8px; margin: 4px 0 8px; }
+.go-form input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; font-size: 16px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--bg); color: var(--ink); }
+.book-group { margin: 16px 0 8px; }
+.book-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.book-grid button, .chapter-grid button {
+  min-height: 44px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--bg); color: var(--ink); font-size: 0.95em;
+}
+.book-grid button { text-align: left; padding: 0 12px; }
+.book-grid [aria-current], .chapter-grid [aria-current] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.chapter-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.chapter-grid button { height: 48px; font-weight: 600; }
+:root:not([data-look="journal"]) .book-grid button { font-family: var(--f-display); font-weight: 600; font-size: 1.05em; }
+.dropcap, .book-btn, .chapter-grid button, .book-grid button { font-variant-numeric: lining-nums; }
