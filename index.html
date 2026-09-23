@@ -215,6 +215,11 @@
   .setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
   .setting:last-child { border-bottom: 0; }
   .setting span small { display: block; color: var(--muted); font-size: .8rem; }
+  .key-row { padding: 0 0 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+  .key-row label { font-weight: 600; font-size: .9rem; }
+  .key-row input { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 16px; font-family: ui-monospace, monospace; }
+  .key-row small { color: var(--muted); font-size: .8rem; }
+  .key-row a { color: var(--link); }
   .setting select { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; font-size: 16px; }
   .btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding: 8px 14px; font-weight: 600; }
   .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -324,11 +329,23 @@
   </div>
   <div class="dlg-body">
     <div class="setting">
-      <span>Verse text<small>Built in, works offline</small></span>
+      <span>Verse text<small>Translation added to your notes</small></span>
       <select id="sVerseText">
-        <option value="BSB">BSB – Berean Standard</option>
-        <option value="KJV">KJV – King James</option>
+        <optgroup label="On this phone (works offline)">
+          <option value="BSB">BSB – Berean Standard</option>
+          <option value="KJV">KJV – King James</option>
+        </optgroup>
+        <optgroup label="Online (free key)">
+          <option value="ESV">ESV – English Standard</option>
+          <option value="NLT">NLT – New Living</option>
+        </optgroup>
       </select>
+    </div>
+    <div class="key-row" id="keyRow" hidden>
+      <label for="sApiKey" id="keyLabel">API key</label>
+      <input id="sApiKey" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <small><span id="keyHelp"></span> <a id="keyLink" target="_blank" rel="noopener">Get a key</a><br>
+        Needs internet when a verse is added. Offline, the BSB is used instead. Your key is stored only on this device.</small>
     </div>
     <div class="setting">
       <span>Auto-insert verses<small>Type a reference like John 3:16, then press Enter</small></span>
@@ -401,7 +418,7 @@ function persistNotes() {
   }
 }
 function loadSettings() {
-  const defaults = { translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on' };
+  const defaults = { translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {} };
   try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY))); }
   catch { return defaults; }
 }
@@ -518,14 +535,40 @@ function linkifyRefs(escaped) {
 }
 
 /* =========================================================
-   Built-in Bible text (public-domain translations in bible/*.js)
+   Bible translations
+   BSB and KJV are public domain and bundled in bible/*.js (offline).
+   Copyrighted translations come from each publisher's own online service,
+   using a free key the user enters in Settings.
    ========================================================= */
+const TRANSLATIONS = {
+  BSB: { name: 'Berean Standard Bible' },
+  KJV: { name: 'King James Version' },
+  ESV: {
+    name: 'English Standard Version',
+    fetch: fetchEsv,
+    signup: 'https://api.esv.org/',
+    help: 'Free for personal use. Sign up at api.esv.org, create an app, and paste its key here.',
+  },
+  NLT: {
+    name: 'New Living Translation',
+    fetch: fetchNlt,
+    defaultKey: 'TEST',
+    signup: 'https://api.nlt.to/',
+    help: 'Leave blank to use Tyndale’s public test key (light use), or get your own free key at api.nlt.to.',
+  },
+  // To add another service later (e.g. YouVersion, or API.Bible for the NIV), add an entry
+  // with a `fetch(reference, key)` function that resolves to the passage text with verse
+  // numbers written as [16], or to '' if the passage isn't found.
+};
+const isOnline = code => !!(TRANSLATIONS[code] && TRANSLATIONS[code].fetch);
+
 const BOOK_INDEX = new Map(BOOKS.map(([canon], i) => [canon, i]));
 const MAX_VERSES = 30;
+const ONLINE_TIMEOUT_MS = 8000;
 const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 const bibleLoads = {};
 
-/** Load a translation on demand. Uses a <script> tag so it also works from file://. */
+/** Load a bundled translation on demand. Uses a <script> tag so it also works from file://. */
 function loadBible(code) {
   if (window.BIBLE_DATA && BIBLE_DATA[code]) return Promise.resolve(BIBLE_DATA[code]);
   if (!bibleLoads[code]) {
@@ -539,6 +582,9 @@ function loadBible(code) {
   }
   return bibleLoads[code];
 }
+
+/** The bundled translation used for the selected one (online translations fall back to BSB). */
+const offlineCode = code => (isOnline(code) || !TRANSLATIONS[code]) ? 'BSB' : code;
 
 // Only references with chapter AND verse, e.g. "John 3:16", "rom 8:28-30", "Gen 1:1-2:3".
 // Case-insensitive, since "chapter:verse" rarely shows up in ordinary prose.
@@ -572,13 +618,24 @@ function refLabel(r) {
 
 const sup = n => String(n).split('').map(d => SUPERSCRIPT[d]).join('');
 
-/** Look up the text for a reference. Returns null if it doesn't exist. */
+/** Replace [16] / [2:1] verse markers with superscripts, or drop them for a single verse. */
+function formatVerseNumbers(text, multi) {
+  return text
+    .replace(/\s*\[(\d+(?::\d+)?)\]\s*/g, (m, n) => multi ? ` ${n.split(':').map(sup).join('ː')} ` : ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Look up a reference in a bundled translation. Returns null if it doesn't exist.
+ * Long ranges are cut at MAX_VERSES; endCh/endV say where the text actually stops.
+ */
 function passageText(bible, r) {
   const chapters = bible[r.book];
   if (!chapters || !chapters[r.ch - 1]) return null;
   if (r.v1 < 1 || r.v1 > chapters[r.ch - 1].length) return null;
   const parts = [];
-  let count = 0, truncated = false;
+  let count = 0, truncated = false, endCh = r.ch, endV = r.v1;
   const multi = r.ch2 !== r.ch || r.v2 !== r.v1;
   for (let c = r.ch; c <= Math.min(r.ch2, chapters.length); c++) {
     const verses = chapters[c - 1];
@@ -587,105 +644,190 @@ function passageText(bible, r) {
     for (let v = from; v <= to; v++) {
       if (count >= MAX_VERSES) { truncated = true; break; }
       count++;
+      endCh = c; endV = v;
       const t = verses[v - 1];
       if (!t) continue; // e.g. verses the BSB omits (Matthew 17:21)
-      const num = multi ? (c !== r.ch && v === 1 ? sup(c) + 'ː' + sup(v) : sup(v)) + ' ' : '';
-      parts.push(num + t);
+      parts.push(`[${c !== r.ch && v === 1 ? c + ':' + v : v}] ${t}`);
     }
     if (truncated) break;
   }
-  return { text: parts.join(' '), truncated };
+  return { text: formatVerseNumbers(parts.join(' '), multi), truncated, endCh, endV, multi };
 }
 
-function verseLine(r, passage, code) {
-  if (!passage.text) return `📖 ${refLabel(r)} (not included in the ${code})`;
-  return `📖 ${refLabel(r)} “${passage.text}${passage.truncated ? ' …' : ''}” (${code})`;
+/* ----- Online services ----- */
+
+function withTimeout(promise, ms) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+}
+
+class KeyError extends Error {}
+
+// ESV API v3 (Crossway): https://api.esv.org/docs/passage-text/
+async function fetchEsv(ref, key) {
+  const params = new URLSearchParams({
+    q: ref,
+    'include-passage-references': 'false',
+    'include-verse-numbers': 'true',
+    'include-first-verse-numbers': 'true',
+    'include-footnotes': 'false',
+    'include-headings': 'false',
+    'include-short-copyright': 'false',
+    'include-selahs': 'true',
+    'indent-paragraphs': '0',
+    'indent-poetry': 'false',
+  });
+  const res = await fetch('https://api.esv.org/v3/passage/text/?' + params, {
+    headers: { Authorization: 'Token ' + key },
+  });
+  if (res.status === 401 || res.status === 403) throw new KeyError();
+  if (!res.ok) throw new Error('ESV ' + res.status);
+  const data = await res.json();
+  return (data.passages || []).join(' ');
+}
+
+// NLT API (Tyndale): https://api.nlt.to/ — returns the passage as HTML.
+async function fetchNlt(ref, key) {
+  const params = new URLSearchParams({ ref, version: 'NLT', key });
+  const res = await fetch('https://api.nlt.to/api/passages?' + params);
+  if (res.status === 401 || res.status === 403) throw new KeyError();
+  if (!res.ok) throw new Error('NLT ' + res.status);
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+  // Drop headings, footnotes and chapter numbers; keep verse numbers as [n].
+  doc.querySelectorAll('h1, h2, h3, h4, h5, h6, .tn, .a-tn, .subhead, .chapter-number, .psa-title, script, style')
+    .forEach(el => el.remove());
+  doc.querySelectorAll('.vn').forEach(el => { el.textContent = ` [${el.textContent.trim()}] `; });
+  return doc.body ? doc.body.textContent : '';
+}
+
+const onlineCache = new Map();
+
+/**
+ * Get the passage for a reference in the selected translation.
+ * Resolves to { text, truncated, code, fallback? } or { missing: true }.
+ * If an online translation can't be reached, falls back to BSB and says why.
+ */
+async function getPassage(r) {
+  const code = TRANSLATIONS[settings.verseText] ? settings.verseText : 'BSB';
+  const local = passageText(await loadBible(offlineCode(code)), r);
+  if (!local) return { missing: true };
+  if (!isOnline(code)) return { ...local, code };
+
+  const t = TRANSLATIONS[code];
+  const key = ((settings.apiKeys || {})[code] || t.defaultKey || '').trim();
+  if (!key) return { ...local, code: 'BSB', fallback: `add your ${code} key in Settings` };
+
+  // Ask only for what we'd show (the same MAX_VERSES cut as the bundled text).
+  const ref = refLabel({ ...r, ch2: local.endCh, v2: local.endV });
+  const cacheKey = code + '|' + ref;
+  try {
+    if (!onlineCache.has(cacheKey)) {
+      const raw = await withTimeout(t.fetch(ref, key), ONLINE_TIMEOUT_MS);
+      onlineCache.set(cacheKey, formatVerseNumbers(raw || '', local.multi));
+    }
+    const text = onlineCache.get(cacheKey);
+    if (text) return { text, truncated: local.truncated, code };
+    return { ...local, code: 'BSB', fallback: `${code} didn’t return ${ref}` };
+  } catch (e) {
+    const why = e instanceof KeyError ? `${code} key wasn’t accepted` : `couldn’t reach ${code}`;
+    return { ...local, code: 'BSB', fallback: why };
+  }
+}
+
+function verseLine(r, passage) {
+  if (!passage.text) return `📖 ${refLabel(r)} (not included in the ${passage.code})`;
+  // Some translations open the verse with their own quotation mark (e.g. ESV John 3:16).
+  const text = passage.text.replace(/^[“"]\s*/, '');
+  return `📖 ${refLabel(r)} “${text}${passage.truncated ? ' …' : ''}” (${passage.code})`;
 }
 
 /** A line that already holds inserted verse text, e.g. `📖 John 3:16 “For God…” (BSB)`. */
 const isVerseLine = line => /^\s*📖[^“]*“/.test(line) || /^\s*📖.*\(not included in the /.test(line);
 
-/**
- * Work out what to add for the references on one line.
- * Returns null if nothing to do, or { replace, insertBelow, labels, missing }.
- *   replace: new text for the whole line (the line was just a reference)
- *   insertBelow: verse lines to add after the line (references inside a sentence)
- */
-function planVerses(line, fullText, bible, code) {
-  if (isVerseLine(line)) return null;
-  const refs = findVerseRefs(line);
-  if (!refs.length) return null;
-
-  // "📖 John 10:11 I am the good shepherd." means the text was typed by hand.
-  const bare = line.replace(/^\s*📖️?\s*/, '').replace(/[\s.,;:!?]+$/, '');
-  const refOnly = refs.length === 1 && bare.toLowerCase() === refs[0].text.toLowerCase();
-  if (!refOnly && /^\s*📖/.test(line)) return null;
-
-  const plan = { replace: null, insertBelow: [], labels: [], missing: [], truncated: false };
-  for (const r of refs) {
-    const p = passageText(bible, r);
-    if (!p) { plan.missing.push(refLabel(r)); continue; }
-    const vl = verseLine(r, p, code);
-    plan.truncated = plan.truncated || p.truncated;
-    if (refOnly) { plan.replace = vl; }
-    else {
-      // Don't insert the same passage twice in one note.
-      if (fullText.includes(vl) || plan.insertBelow.includes(vl)) continue;
-      plan.insertBelow.push(vl);
-    }
-    plan.labels.push(refLabel(r));
+/** Find `line` as a whole line in `text`, nearest to where it was. Returns -1 if it's gone. */
+function relocateLine(text, lineStart, line) {
+  const isWholeLine = at => at >= 0 && (at === 0 || text[at - 1] === '\n') &&
+    (at + line.length === text.length || text[at + line.length] === '\n') &&
+    text.slice(at, at + line.length) === line;
+  if (isWholeLine(lineStart)) return lineStart;
+  let best = -1;
+  for (let at = text.indexOf(line); at !== -1; at = text.indexOf(line, at + 1)) {
+    if (isWholeLine(at) && (best === -1 || Math.abs(at - lineStart) < Math.abs(best - lineStart))) best = at;
   }
-  return plan;
+  return best;
 }
 
 /**
- * Add verse text for the line at [lineStart, lineStart + line.length).
+ * Add verse text for the references on the line starting at lineStart.
+ *  - A line that is just a reference is replaced by the verse.
+ *  - References inside a sentence get their verses on the lines below.
  * Keeps the cursor where the user is typing and offers Undo.
  */
 async function insertVersesForLine(lineStart, line, { manual = false } = {}) {
   const ta = F.body;
-  const code = settings.verseText;
   const noteId = current && current.id;
-  let bible = window.BIBLE_DATA && BIBLE_DATA[code];
-  if (!bible) {
-    try { bible = await loadBible(code); }
-    catch { if (manual) toast('⚠️ Couldn’t load Bible text'); return false; }
-    // The user may have kept typing while it loaded; make sure the line is still there.
-    if (!current || current.id !== noteId || ta.value.slice(lineStart, lineStart + line.length) !== line) return false;
-  }
-  const plan = planVerses(line, ta.value, bible, code);
-  if (!plan) return false;
-  if (plan.missing.length && !plan.labels.length) {
-    toast(`Couldn’t find ${plan.missing.join(', ')}`);
+  if (isVerseLine(line)) return false;
+  const refs = findVerseRefs(line);
+  if (!refs.length) return false;
+
+  // "📖 John 10:11 I am the good shepherd." means the text was typed by hand.
+  const bare = line.replace(/^\s*📖️?\s*/, '').replace(/[\s.,;:!?]+$/, '');
+  const refOnly = refs.length === 1 && bare.toLowerCase() === refs[0].text.toLowerCase();
+  if (!refOnly && /^\s*📖/.test(line)) return false;
+
+  let passages;
+  try { passages = await Promise.all(refs.map(getPassage)); }
+  catch { if (manual) toast('⚠️ Couldn’t load Bible text'); return false; }
+
+  // The user may have kept typing while the text loaded; find the line again.
+  if (!current || current.id !== noteId) return false;
+  lineStart = relocateLine(ta.value, lineStart, line);
+  if (lineStart === -1) return false;
+
+  const labels = [], missing = [], lines = [], fallbacks = new Set();
+  let truncated = false;
+  refs.forEach((r, i) => {
+    const p = passages[i];
+    if (p.missing) { missing.push(refLabel(r)); return; }
+    const vl = verseLine(r, p);
+    // Don't insert the same passage twice in one note.
+    if (!refOnly && (ta.value.includes(vl) || lines.includes(vl))) return;
+    lines.push(vl);
+    labels.push(refLabel(r));
+    truncated = truncated || p.truncated;
+    if (p.fallback) fallbacks.add(p.fallback);
+  });
+  if (!lines.length) {
+    if (missing.length) toast(`Couldn’t find ${missing.join(', ')}`);
     return false;
   }
-  if (!plan.replace && !plan.insertBelow.length) return false;
 
   const lineEnd = lineStart + line.length;
-  let inserted, original;
-  if (plan.replace) {
-    ta.setRangeText(plan.replace, lineStart, lineEnd, manual ? 'end' : 'preserve');
-    inserted = plan.replace; original = line;
+  let inserted;
+  if (refOnly) {
+    inserted = lines[0];
+    ta.setRangeText(inserted, lineStart, lineEnd, manual ? 'end' : 'preserve');
   } else {
-    const block = '\n' + plan.insertBelow.join('\n');
+    const block = '\n' + lines.join('\n');
+    inserted = line + block;
     ta.setRangeText(block, lineEnd, lineEnd, 'preserve');
-    inserted = line + block; original = line;
     if (manual) ta.setSelectionRange(lineEnd + block.length, lineEnd + block.length);
   }
   scheduleSave();
 
-  let msg = `Added ${plan.labels.join(', ')}`;
-  if (plan.truncated) msg += ` (first ${MAX_VERSES} verses)`;
-  if (plan.missing.length) msg += ` · couldn’t find ${plan.missing.join(', ')}`;
+  let msg = `Added ${labels.join(', ')}`;
+  if (truncated) msg += ` (first ${MAX_VERSES} verses)`;
+  if (fallbacks.size) msg += ` in BSB: ${[...fallbacks].join('; ')}`;
+  if (missing.length) msg += ` · couldn’t find ${missing.join(', ')}`;
   toast(msg, {
     label: 'Undo',
     run: () => {
+      if (!current || current.id !== noteId) return;
       const at = ta.value.indexOf(inserted, Math.max(0, lineStart - 200));
-      if (at === -1 || !current || current.id !== noteId) return;
+      if (at === -1) return;
       const caret = ta.selectionStart;
-      ta.setRangeText(original, at, at + inserted.length, 'preserve');
+      ta.setRangeText(line, at, at + inserted.length, 'preserve');
       if (caret > at + inserted.length) {
-        const pos = caret - (inserted.length - original.length);
+        const pos = caret - (inserted.length - line.length);
         ta.setSelectionRange(pos, pos);
       }
       scheduleSave();
@@ -935,7 +1077,7 @@ function openEditor(id, isNew) {
   $('#editorView').hidden = false;
   window.scrollTo(0, 0);
   if (isNew) setTimeout(() => (n.type === 'sermon' ? F.title : F.passages).focus(), 50);
-  loadBible(settings.verseText).catch(() => {});
+  loadBible(offlineCode(settings.verseText)).catch(() => {});
 }
 
 function setType(type, save = true) {
@@ -1129,6 +1271,7 @@ function applySettings() {
 $('#settingsBtn').addEventListener('click', () => {
   $('#sTranslation').value = settings.translation;
   $('#sVerseText').value = settings.verseText;
+  updateKeyRow();
   $('#sAutoVerse').value = settings.autoVerse;
   $('#sTheme').value = settings.theme;
   $('#sSize').value = settings.size;
@@ -1144,8 +1287,26 @@ $('#settingsDlg').addEventListener('click', e => { if (e.target === $('#settings
     settings[key] = e.target.value;
     persistSettings();
     applySettings();
-    if (key === 'verseText') loadBible(settings.verseText).catch(() => {});
+    if (key === 'verseText') { updateKeyRow(); loadBible(offlineCode(settings.verseText)).catch(() => {}); }
   }));
+
+/** Show the key field only for online translations. */
+function updateKeyRow() {
+  const code = settings.verseText;
+  const t = TRANSLATIONS[code];
+  $('#keyRow').hidden = !isOnline(code);
+  if (!isOnline(code)) return;
+  $('#keyLabel').textContent = `${code} key`;
+  $('#sApiKey').value = (settings.apiKeys || {})[code] || '';
+  $('#sApiKey').placeholder = t.defaultKey ? `Optional (uses “${t.defaultKey}”)` : 'Paste your key';
+  $('#keyHelp').textContent = t.help;
+  $('#keyLink').href = t.signup;
+}
+$('#sApiKey').addEventListener('input', e => {
+  settings.apiKeys = Object.assign({}, settings.apiKeys, { [settings.verseText]: e.target.value.trim() });
+  onlineCache.clear();
+  persistSettings();
+});
 
 $('#exportJson').addEventListener('click', () => {
   const data = { app: 'bible-notes', version: 1, exportedAt: new Date().toISOString(), notes };

@@ -13,8 +13,21 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
   - A reference inside a sentence (`Paul says in Rom 8:28 all things…`) gets the verse added on the line below,
     and you keep typing where you were.
   - Tap **Undo** on the pop-up to remove it, or put the cursor on a line and tap **📖 Verse** to add it by hand.
-  - Choose **BSB** (Berean Standard Bible, modern English) or **KJV** in Settings, or turn auto-insert off.
-    Both are public domain, which is why they can be bundled. ESV and NIV are copyrighted and can't be included.
+  - Choose the translation in **Settings → Verse text**, or turn auto-insert off:
+
+    | Translation | Where the text comes from | Needs |
+    |-------------|---------------------------|-------|
+    | **BSB** Berean Standard Bible | Bundled in the app | Nothing, works offline |
+    | **KJV** King James Version | Bundled in the app | Nothing, works offline |
+    | **ESV** English Standard Version | Crossway's ESV API | Internet + free key from [api.esv.org](https://api.esv.org/) |
+    | **NLT** New Living Translation | Tyndale's NLT API | Internet (built-in test key, or your own free key from [api.nlt.to](https://api.nlt.to/)) |
+
+    BSB and KJV are public domain, so they can be bundled. ESV and NLT are copyrighted and come from the
+    publishers' own services. If an online translation can't be reached, or the key is missing or rejected,
+    the verse is added from the BSB and the pop-up says why.
+
+    To add another service later (e.g. YouVersion, or API.Bible for the NIV), add an entry to
+    `TRANSLATIONS` in `index.html` with a `fetch(reference, key)` function.
 - **Quick-mark buttons** for headings, bullet points, ⭐ key points, 📖 verses, ❓ questions, ➡️ applications and 🙏 prayers.
   Bullet lists continue automatically when you press Enter.
 - **Preview mode** shows color-coded notes. Verse references such as `John 3:16` or `1 Cor 13:4-7` become links
