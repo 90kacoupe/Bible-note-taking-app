@@ -272,10 +272,7 @@
           <option value="BSB">BSB – Berean Standard</option>
           <option value="KJV">KJV – King James</option>
         </optgroup>
-        <optgroup label="Online (free key)">
-          <option value="ESV">ESV – English Standard</option>
-          <option value="NLT">NLT – New Living</option>
-        </optgroup>
+        <optgroup label="Online (free key)" id="directGroup"></optgroup>
         <optgroup label="YouVersion (online)" id="yvGroup"></optgroup>
       </select>
     </div>
@@ -2219,7 +2216,24 @@ $('#settingsDlg').addEventListener('click', e => { if (e.target === $('#settings
   }));
 
 /** Fill the YouVersion part of the Verse text list with the Bibles loaded for the key. */
+// ESV and NLT straight from their publishers; only offered when YouVersion doesn't have them.
+const DIRECT_OPTIONS = [['ESV', 'ESV – English Standard'], ['NLT', 'NLT – New Living']];
+const yvVersionFor = abbr => (settings.yvVersions || []).find(v => v.abbr.toUpperCase() === abbr);
+
+/** If ESV or NLT is selected and YouVersion has it, switch to YouVersion's copy. */
+function preferYouVersion() {
+  const yv = DIRECT_OPTIONS.some(([code]) => code === settings.verseText) && yvVersionFor(settings.verseText);
+  if (yv) {
+    settings.verseText = 'YV:' + yv.id;
+    persistSettings();
+  }
+}
+
 function renderVerseTextOptions() {
+  preferYouVersion();
+  const direct = DIRECT_OPTIONS.filter(([code]) => !yvVersionFor(code));
+  $('#directGroup').innerHTML = direct.map(([code, label]) => `<option value="${code}">${label}</option>`).join('');
+  $('#directGroup').hidden = !direct.length;
   const group = $('#yvGroup');
   const versions = settings.yvVersions || [];
   group.innerHTML = versions.map(v =>
@@ -2257,6 +2271,7 @@ $('#yvLoad').addEventListener('click', async () => {
     persistSettings();
     renderVerseTextOptions();
     $('#sVerseText').value = settings.verseText;
+    updateKeyRow();
     setYvStatus();
   } catch (e) {
     setYvStatus(e instanceof KeyError
@@ -2351,6 +2366,7 @@ notes = notes.map(normalizeNote);
 /* =========================================================
    Start up
    ========================================================= */
+preferYouVersion();
 applySettings();
 renderList();
 route();

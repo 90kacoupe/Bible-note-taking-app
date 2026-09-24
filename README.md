@@ -48,6 +48,9 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
     | **NLT** New Living Translation | Tyndale's NLT API | Internet (built-in test key, or your own free key from [api.nlt.to](https://api.nlt.to/)) |
     | **YouVersion** (NIV and many more) | [YouVersion Platform](https://developers.youversion.com/) | Internet + your YouVersion app key |
 
+    Once your YouVersion Bibles are loaded, the separate ESV and NLT options are hidden if YouVersion offers the
+    same translation (and a selected ESV/NLT switches to the YouVersion copy).
+
     BSB and KJV are public domain, so they can be bundled. ESV and NLT are copyrighted and come from the
     publishers' own services. If an online translation can't be reached, or the key is missing or rejected,
     the verse is added from the BSB and the pop-up says why.
