@@ -17,6 +17,11 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
   - Read any chapter in BSB or KJV (offline), or ESV, NLT or your YouVersion translations (online; falls back to BSB when offline).
   - Tap the chapter name to pick a book and chapter, tap the search icon to jump to a reference (e.g. `rom 8:28`),
     and swipe or use the arrows to change chapters. The app remembers where you left off.
+  - **Printed-Bible layout:** section headings, parallel passages, paragraphs, poetry lines and footnotes (tap the
+    small letter to read one). BSB has all of these; KJV has its paragraphs, Psalm titles and poetry, and shows the
+    words the translators supplied in italics, as printed KJVs do. YouVersion translations show the headings,
+    paragraphs and footnotes YouVersion provides. ESV and NLT show verse text only for now. Settings → *Words of Jesus
+    in red* turns on red letters.
   - **Highlight:** tap verses to select them, then choose one of five colors. Highlights are saved per verse, so they
     show in every translation, and they're included in your backup.
   - **Copy, share, or start a note** from selected verses. The new note has the passage and verse text filled in.
@@ -119,8 +124,8 @@ fonts/                 Bundled fonts (SIL Open Font License, licenses included)
 manifest.webmanifest   App name, colors and icons for "Add to Home Screen"
 sw.js                  Service worker that caches the app for offline use
 icons/                 App icons
-bible/bsb.js, kjv.js   Bible text (loaded only when needed, cached for offline use)
-tools/build_bible.py   Script that generated bible/*.js from public-domain source data
+bible/bsb.js, kjv.js   Bible text with headings, paragraphs and footnotes (loaded when needed, cached for offline use)
+tools/build_bible.py   Builds bible/*.js from the official BSB USFM release and the eBible.org KJV (public domain)
 ```
 
 When you change `index.html`, bump `VERSION` in `sw.js` so installed copies pick up the update.
