@@ -215,6 +215,18 @@
   <a class="vs-link" id="vsGateway" target="_blank" rel="noopener"></a>
 </div>
 
+<!-- Add verses to today's note, or start a new one -->
+<div class="sheet" id="choiceSheet" role="dialog" aria-labelledby="choiceTitle" hidden>
+  <span class="sheet-grip only-journal" aria-hidden="true"></span>
+  <div class="sheet-head">
+    <span class="sheet-title"><span class="sheet-kicker only-journal">Keep today’s study together</span><span class="sheet-ref" id="choiceTitle"></span></span>
+    <button class="icon-btn" id="choiceClose" aria-label="Cancel"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="vs-title"><span>Add to today’s note</span></div>
+  <div id="choiceNotes"></div>
+  <button class="btn big" id="choiceNew"><svg class="ic"><use href="#i-plus"/></svg><span class="only-leather">Start a new note</span><span class="only-journal">Start a new entry</span></button>
+</div>
+
 <!-- Book & chapter picker -->
 <dialog id="bookDlg" aria-labelledby="bookDlgTitle">
   <div class="dlg-head">
@@ -1242,7 +1254,8 @@ const F = {
   location: $('#fLocation'), series: $('#fSeries'), tags: $('#fTags'), tagsStudy: $('#fTagsStudy'), body: $('#fBody'),
 };
 
-function openEditor(id, isNew) {
+function openEditor(id, mode) {
+  const isNew = mode === 'new';
   const n = getNote(id);
   if (!n) { location.hash = ''; return; }
   current = n;
@@ -1257,12 +1270,20 @@ function openEditor(id, isNew) {
   $('#moreDetails').open = false;
   setType(n.type, false);
   // Existing notes open ready to read; new ones open ready to type.
-  setPreview(!isNew && !isBlank(n));
+  setPreview(!mode && !isBlank(n));
   $('#saveState').textContent = '';
   updateStamp();
   showView('editor');
   window.scrollTo(0, 0);
   if (isNew) setTimeout(() => (n.type === 'sermon' ? F.title : F.passages).focus(), 50);
+  if (mode === 'append') setTimeout(() => {
+    const end = F.body.value.length;
+    F.body.focus();
+    F.body.setSelectionRange(end, end);
+    F.body.scrollTop = F.body.scrollHeight;
+    F.body.scrollIntoView({ block: 'end' });
+    toast('Added to this note');
+  }, 60);
   loadBible(offlineCode(settings.verseText)).catch(() => {});
 }
 
@@ -1978,7 +1999,34 @@ $('#selShare').addEventListener('click', async () => {
 $('#selNote').addEventListener('click', () => newNoteOnVerses(reader.book, reader.ch, [...reader.selected]));
 
 /** Start a study note on some verses, with their text filled in. */
+/**
+ * "Add note" on some verses. If there are notes from today, ask whether to add the verses to
+ * one of them (to keep one study time together) or start a new note.
+ */
 function newNoteOnVerses(book, ch, list) {
+  const today = notes
+    .filter(n => n.date === todayISO() && !isBlank(n))
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, 3);
+  if (!today.length) { startNoteOnVerses(book, ch, list); return; }
+  pendingVerses = { book, ch, list: [...list] };
+  closeVerseSheet();
+  $('#selSheet').hidden = true;
+  $('#choiceTitle').textContent = versesLabel(book, ch, list);
+  $('#choiceNotes').innerHTML = today.map(n => noteCardHtml(n, 'Add here')).join('');
+  $('#choiceSheet').hidden = false;
+  $('#verseBackdrop').hidden = false;
+}
+let pendingVerses = null;
+
+function closeChoice() {
+  $('#choiceSheet').hidden = true;
+  $('#verseBackdrop').hidden = true;
+  pendingVerses = null;
+  updateSelSheet();
+}
+
+function startNoteOnVerses(book, ch, list) {
   const n = createNote('study');
   n.passages = versesLabel(book, ch, list);
   n.body = verseLinesFor(book, ch, list).join('\n') + '\n';
@@ -1987,6 +2035,36 @@ function newNoteOnVerses(book, ch, list) {
   closeVerseSheet();
   location.hash = '#/note/' + n.id + '/new';
 }
+
+/** Append verses to an existing note and open it with the cursor at the end. */
+function addVersesToNote(n, book, ch, list) {
+  const label = versesLabel(book, ch, list);
+  n.body = n.body.replace(/\s+$/, '') + (n.body.trim() ? '\n\n' : '') + verseLinesFor(book, ch, list).join('\n') + '\n';
+  // Add the passage to the Scripture field unless it's already covered there.
+  const covered = findLooseRefs(n.passages);
+  if (!list.every(v => covered.some(r => inRange(r, book, ch, v)))) {
+    n.passages = n.passages.trim() ? `${n.passages.trim()}; ${label}` : label;
+  }
+  n.updatedAt = Date.now();
+  persistNotes();
+  clearSelection();
+  location.hash = '#/note/' + n.id + '/append';
+}
+
+$('#choiceClose').addEventListener('click', closeChoice);
+$('#choiceNew').addEventListener('click', () => {
+  const p = pendingVerses;
+  closeChoice();
+  if (p) startNoteOnVerses(p.book, p.ch, p.list);
+});
+$('#choiceNotes').addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  const p = pendingVerses;
+  if (!card || !p) return;
+  const n = getNote(card.dataset.id);
+  closeChoice();
+  if (n) addVersesToNote(n, p.book, p.ch, p.list);
+});
 
 /* ----- Notes on a verse (or on the whole chapter) ----- */
 let verseSheetFor = null;
@@ -2026,7 +2104,7 @@ function closeVerseSheet() {
 }
 $('#chNotes').addEventListener('click', () => openVerseSheet(null));
 $('#vsClose').addEventListener('click', closeVerseSheet);
-$('#verseBackdrop').addEventListener('click', closeVerseSheet);
+$('#verseBackdrop').addEventListener('click', () => { if (pendingVerses) closeChoice(); else closeVerseSheet(); });
 $('#vsNew').addEventListener('click', () => { if (verseSheetFor) newNoteOnVerses(reader.book, reader.ch, [verseSheetFor]); });
 $('#vsNotes').addEventListener('click', e => {
   const card = e.target.closest('.card');
@@ -2132,7 +2210,7 @@ function showView(name) {
   $('#tabBar').hidden = name === 'editor';
   document.documentElement.dataset.view = name;
   $$('#tabBar .tab').forEach(t => t.setAttribute('aria-current', t.dataset.tab === name ? 'page' : 'false'));
-  if (name !== 'bible') { clearSelection(); closeVerseSheet(); }
+  if (name !== 'bible') { $('#choiceSheet').hidden = true; pendingVerses = null; clearSelection(); closeVerseSheet(); }
 }
 $$('#tabBar .tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'bible') goToChapter(reader.book, reader.ch);
@@ -2143,10 +2221,10 @@ $$('#tabBar .tab').forEach(t => t.addEventListener('click', () => {
    Routing (so the phone's Back button works)
    ========================================================= */
 function route() {
-  let m = location.hash.match(/^#\/note\/([^/]+)(\/new)?$/);
+  let m = location.hash.match(/^#\/note\/([^/]+)(\/new|\/append)?$/);
   if (m) {
     if (current && current.id !== m[1]) closeEditor();
-    if (!current || current.id !== m[1]) openEditor(m[1], !!m[2]);
+    if (!current || current.id !== m[1]) openEditor(m[1], m[2] ? m[2].slice(1) : null);
     return;
   }
   closeEditor();

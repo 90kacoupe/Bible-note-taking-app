@@ -773,3 +773,8 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; font-
 :root[data-look="journal"] .footnotes h4 { font-family: var(--f-hand); font-size: 1.35em; font-weight: 600; color: var(--ink); }
 :root[data-look="journal"] .fn-pop { border-radius: 14px; border: 1px solid var(--rule); }
 :root[data-look="journal"] .fn-pop-ref { font-family: var(--f-hand); font-size: 1.2em; }
+
+/* Add-to-today's-note choice */
+#choiceNotes .card { margin-bottom: 0; }
+:root[data-look="journal"] #choiceNotes { display: flex; flex-direction: column; gap: 10px; }
+#choiceNotes .snippet.relation { font-style: normal; font-weight: 600; color: var(--accent); }

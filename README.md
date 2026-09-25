@@ -25,6 +25,8 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
   - **Highlight:** tap verses to select them, then choose one of five colors. Highlights are saved per verse, so they
     show in every translation, and they're included in your backup.
   - **Copy, share, or start a note** from selected verses. The new note has the passage and verse text filled in.
+    If you already have a note from today, you can add the verses to it instead, so one study time stays in one
+    note: they're added at the end, the passage joins the Scripture field, and the note opens ready to keep typing.
   - **Your notes, linked:** a banner shows notes that cover the chapter, and a marker appears on verses your notes
     quote or mention. Tap it to see those notes. Verse references in your notes open the reader.
 - **Reading view:** notes open ready to read. Tap **Edit** to change them. In the reading view you can
