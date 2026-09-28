@@ -107,10 +107,11 @@
         <button data-type="study" aria-pressed="false">Study</button>
       </div>
 
-      <input id="fTitle" class="title-input" placeholder="Title" aria-label="Title" autocomplete="off" enterkeyhint="next">
+      <label class="title-label" id="fTitleLabel" for="fTitle">Sermon name</label>
+      <input id="fTitle" class="title-input" placeholder="Title" autocomplete="off" enterkeyhint="next">
 
-      <div class="meta">
-        <label class="full">Scripture
+      <div class="meta" id="metaMain">
+        <label class="full" id="passagesField">Scripture
           <input id="fPassages" placeholder="e.g. John 3:16-21; Romans 8:28" autocomplete="off">
         </label>
         <label>Date <input id="fDate" type="date"></label>
@@ -118,11 +119,11 @@
         <label class="study-only">Tags <input id="fTagsStudy" placeholder="faith, prayer" autocomplete="off"></label>
       </div>
       <details class="more sermon-only" id="moreDetails">
-        <summary>More details (church, series, tags)</summary>
-        <div class="meta">
-          <label>Church / event <input id="fLocation" autocomplete="off"></label>
+        <summary>More details (church, Scripture, series, tags)</summary>
+        <div class="meta" id="metaMore">
+          <label>Church <input id="fLocation" autocomplete="off"></label>
           <label>Series <input id="fSeries" autocomplete="off"></label>
-          <label class="full">Tags <input id="fTags" placeholder="faith, prayer, hope" autocomplete="off"></label>
+          <label class="full" id="fTagsField">Tags <input id="fTags" placeholder="faith, prayer, hope" autocomplete="off"></label>
         </div>
       </details>
     </div>
@@ -276,6 +277,13 @@
       </select>
     </div>
 
+    <p class="section-title label-caps">Sermons</p>
+    <div class="key-row">
+      <label for="sChurch">Default church</label>
+      <input id="sChurch" type="text" autocomplete="off" placeholder="e.g. Grace Community Church" style="font-family: inherit">
+      <small>Filled in on new sermon notes. You can still change it on any note.</small>
+    </div>
+
     <p class="section-title label-caps">Verses</p>
     <div class="setting">
       <span>Verse text<small>Translation added to your notes</small></span>
@@ -365,7 +373,7 @@ function persistNotes() {
   }
 }
 function loadSettings() {
-  const defaults = { redLetter: 'off', look: 'leather', translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {}, yvVersions: [] };
+  const defaults = { defaultChurch: '', redLetter: 'off', look: 'leather', translation: 'ESV', theme: 'system', size: 'medium', verseText: 'BSB', autoVerse: 'on', apiKeys: {}, yvVersions: [] };
   try { return Object.assign(defaults, JSON.parse(localStorage.getItem(SETTINGS_KEY))); }
   catch { return defaults; }
 }
@@ -1093,10 +1101,10 @@ function createNote(kind) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  // Pre-fill church from the most recent sermon, since it's usually the same.
+  // Church: the default from Settings, else the most recent sermon's (it's usually the same).
   if (note.type === 'sermon') {
     const last = notes.filter(n => n.type === 'sermon' && n.location).sort((a, b) => b.updatedAt - a.updatedAt)[0];
-    if (last) note.location = last.location;
+    note.location = settings.defaultChurch || (last ? last.location : '');
   }
   notes.push(note);
   persistNotes();
@@ -1293,7 +1301,13 @@ function setType(type, save = true) {
   $$('.sermon-only').forEach(el => { el.hidden = type !== 'sermon'; });
   $$('.study-only').forEach(el => { el.hidden = type !== 'study'; });
   $('#editorHeading').textContent = type === 'sermon' ? 'Sermon' : 'Bible study';
-  F.title.placeholder = type === 'sermon' ? 'Sermon title' : 'Study title (optional)';
+  $('#fTitleLabel').textContent = type === 'sermon' ? 'Sermon name' : 'Title';
+  F.title.placeholder = type === 'sermon' ? 'What was the sermon called?' : 'Study title (optional)';
+  // Sermons lead with the sermon name; Scripture moves into "More details" (it fills itself in).
+  const field = $('#passagesField');
+  if (type === 'sermon') $('#metaMore').insertBefore(field, $('#fTagsField'));
+  else $('#metaMain').prepend(field);
+  F.passages.placeholder = type === 'sermon' ? 'Filled in from verses in your notes' : 'e.g. John 3:16-21; Romans 8:28';
   if (save) scheduleSave();
 }
 $$('.type-toggle button').forEach(b => b.addEventListener('click', () => setType(b.dataset.type)));
@@ -1309,6 +1323,41 @@ function readForm() {
   current.body = F.body.value;
 }
 
+/** Every verse reference in a note's text (inserted verses and typed ones), in order, e.g. "John 10:11". */
+function bodyPassages(body) {
+  const labels = [];
+  for (const line of body.split('\n')) {
+    const verse = parseVerseLine(line);
+    for (const r of findVerseRefs(verse ? verse.ref : line)) {
+      const label = refLabel(r);
+      if (!labels.includes(label)) labels.push(label);
+    }
+  }
+  return labels;
+}
+
+/**
+ * The Scripture field with the note's references added. Entries the app added (autoPassages)
+ * come out again when they're gone from the notes; entries typed by hand are never removed.
+ */
+function syncPassages(n) {
+  const found = bodyPassages(n.body);
+  const auto = new Set(n.autoPassages || []);
+  let entries = n.passages.split(';').map(e => e.trim()).filter(Boolean);
+  entries = entries.filter(e => !auto.has(e) || found.includes(e));
+  const added = [...auto].filter(l => entries.includes(l));
+  for (const label of found) {
+    if (entries.includes(label)) continue;
+    const covered = findVerseRefs(label).every(r => entries.some(e => findLooseRefs(e).some(c =>
+      inRange(c, r.book, r.ch, r.v1) && inRange(c, r.book, r.ch2, r.v2))));
+    if (covered) continue;
+    entries.push(label);
+    added.push(label);
+  }
+  n.autoPassages = [...new Set(added)];
+  return entries.join('; ');
+}
+
 function scheduleSave() {
   $('#saveState').textContent = 'Editing…';
   clearTimeout(saveTimer);
@@ -1319,6 +1368,11 @@ function saveNow() {
   saveTimer = null;
   if (!current) return;
   readForm();
+  const passages = syncPassages(current);
+  if (passages !== current.passages) {
+    current.passages = passages;
+    if (document.activeElement !== F.passages) F.passages.value = passages;
+  }
   current.updatedAt = Date.now();
   if (persistNotes()) $('#saveState').textContent = 'Saved ✓';
   updateStamp();
@@ -2275,6 +2329,7 @@ $('#settingsBtn').addEventListener('click', () => {
   setYvStatus();
   $('#sAutoVerse').value = settings.autoVerse;
   $('#sRedLetter').value = settings.redLetter;
+  $('#sChurch').value = settings.defaultChurch || '';
   $('#sTheme').value = settings.theme;
   $('#sSize').value = settings.size;
   const s = notes.filter(n => n.type === 'sermon').length;
@@ -2378,6 +2433,8 @@ $('#sApiKey').addEventListener('input', e => {
   persistSettings();
 });
 
+$('#sChurch').addEventListener('input', e => { settings.defaultChurch = e.target.value.trim(); persistSettings(); });
+
 $('#exportJson').addEventListener('click', () => {
   const data = { app: 'bible-notes', version: 2, exportedAt: new Date().toISOString(), notes, highlights };
   download(`bible-notes-backup-${todayISO()}.json`, JSON.stringify(data, null, 2), 'application/json');
@@ -2437,6 +2494,7 @@ function normalizeNote(n) {
     body: String(n.body || ''),
     createdAt: Number(n.createdAt) || Date.now(),
     updatedAt: Number(n.updatedAt) || Date.now(),
+    autoPassages: Array.isArray(n.autoPassages) ? n.autoPassages.map(String) : [],
   };
 }
 notes = notes.map(normalizeNote);

@@ -778,3 +778,8 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; font-
 #choiceNotes .card { margin-bottom: 0; }
 :root[data-look="journal"] #choiceNotes { display: flex; flex-direction: column; gap: 10px; }
 #choiceNotes .snippet.relation { font-style: normal; font-weight: 600; color: var(--accent); }
+
+/* Label above the note title ("Sermon name") */
+.title-label { display: block; margin-bottom: -6px; }
+:root:not([data-look="journal"]) .title-label { font-family: var(--f-display); font-weight: 700; font-size: 0.68em; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+:root[data-look="journal"] .title-label { font-family: var(--f-hand); font-weight: 600; font-size: 1.2em; color: var(--muted); }

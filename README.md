@@ -32,7 +32,10 @@ It's plain HTML/CSS/JavaScript with no build step or server. It works offline, a
 - **Reading view:** notes open ready to read. Tap **Edit** to change them. In the reading view you can
   tick off applications as you do them.
 
-- **Sermon notes**: title, speaker, date, scripture passages, church/event, series and tags.
+- **Sermon notes**: sermon name, speaker and date up front; church, Scripture, series and tags under *More details*.
+  Set a **default church** in Settings and it's filled in on every new sermon note (still editable per note).
+- **Scripture fills itself in:** verses you insert or references you type in a note (e.g. `Rom 8:28`) are added to
+  its Scripture field, and removed again if you delete them. Anything you type in the field yourself stays.
 - **Bible study notes**: blank or a **SOAP** template (Scripture · Observation · Application · Prayer).
 - **Built-in Bible text (works offline).** Type a reference like `John 3:16`, `rom 8:28` or `1 Cor 13:4-7`
   and press **Enter**. The verse text is added to your note automatically:
